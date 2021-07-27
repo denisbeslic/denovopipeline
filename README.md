@@ -1,7 +1,5 @@
-# Ignas
-## ImmunoGlobulin de Novo Automated Sequencing
-
-Ignas uses multiple de novo sequencing algorithms ([pNovo3](http://pfind.ict.ac.cn/software/pNovo/index.html), [SMSNet](https://github.com/cmb-chula/SMSNet/tree/master#readme), [Novor](https://github.com/compomics/denovogui), [DeepNovo](https://github.com/nh2tran/DeepNovo), [PointNovo](https://github.com/volpato30/PointNovo), [PepNovo+](https://pubmed.ncbi.nlm.nih.gov/15858974/)) and post-processing steps for an improved identification and assembly of antibody sequences by tandem mass spectrometry. 
+# denovopipeline
+denovopipeline uses multiple de novo sequencing algorithms ([pNovo3](http://pfind.ict.ac.cn/software/pNovo/index.html), [SMSNet](https://github.com/cmb-chula/SMSNet/tree/master#readme), [Novor](https://github.com/compomics/denovogui), [DeepNovo](https://github.com/nh2tran/DeepNovo), [PointNovo](https://github.com/volpato30/PointNovo), [PepNovo+](https://pubmed.ncbi.nlm.nih.gov/15858974/)) identification and assembly of peptide sequences by tandem mass spectrometry.
 
 ## How to use
 
@@ -11,19 +9,18 @@ https://1drv.ms/f/s!AuC2G9KYrL1KgZJuI0hxrv5QznTU5w
 
 Move the files to their corresponding directories without renaming.
 
-`smsnet_phospho/` belongs to `resources/SMSNet`
+`smsnet_phospho/` to `resources/SMSNet`
 
-`train/` belongs to `resources/PointNovo`
+`train/` to `resources/PointNovo`
 
-`train.doremon.resolution_50.epoch_20.da_4500.ab.training.mouse/` belongs to `resources/DeepNovo`
+`train.doremon.resolution_50.epoch_20.da_4500.ab.training.mouse/` to `resources/DeepNovo`
 
-`knapsack.npy` belongs to `resources/PointNovo` and `resources/DeepNovo`
-
+`knapsack.npy` to `resources/PointNovo` and `resources/DeepNovo`
 
 
 ### Format raw data
 
-The de novo sequencing step requires specialized spectral mgf (Mascot generic format) files.
+The de novo sequencing step requires mgf (Mascot generic format) files.
 
 You can use Proteowizard `msconvert` to convert your .raw/.mzxml/.mzml files to .mgf format. Proteowizard can be simply installed using [conda](https://anaconda.org/bioconda/proteowizard).
 
@@ -43,9 +40,6 @@ CHARGE=2+
 END IONS
 ```
 
-
-
-
 ### Reformat mgf file
 Another reformatting operation is necessary, because certain tools ignore the old indexing and do not work with predefined
 IDs.
@@ -53,8 +47,8 @@ Spectrum indices and scan IDs are changed to integers from 1 to N. Information o
 
 `python main.py reformatMGF --input YOURDATA.mgf --output YOURDATA_reformatted.mgf`
 
-It will produce two .mgf files. One called YOURDATA_reformatted_deepnovo espically for DeepNovo and one for all other tools.
-The File for DeepNovo includes the 'SEQ=' line, which is necessary for DeepNovo to run.
+It will produce two .mgf files. One called YOURDATA_reformatted_deepnovo.mgf for DeepNovo and PointNovo and another one called YOURDATA_reformatted.mgf for all other tools.
+The file for DeepNovo includes the 'SEQ=' line, which is necessary for DeepNovo to run.
 
 Your final *_reformatted.mgf file should now look like this.
 ```
@@ -103,7 +97,7 @@ Novor and PepNovo+ will be executed by using DeNovoCLI from DeNovoGUI. It is nec
 
 PointNovo, SMSNet and DeepNovo need to be run separately, because they use different dependencies. We provide some pre-trained models, but it is recommended to train models yourself. You can change the model each DeepLearning Tool is using by using the command line arguments `--smsnet_model`, `--deepnovo_model` and `--pointnovo_model`
 
-pNovo3 can only run on Windows and does not work within the pipeline. You can run it separately by following the [instructions on its website](http://pfind.ict.ac.cn/software/pNovo/index.html) and put its final output in the results directory. (Do not use openSearch..)
+pNovo3 can only run on Windows and does not work within the pipeline. You can run it separately by following the [instructions on its website](http://pfind.ict.ac.cn/software/pNovo/index.html) and put its final output in the results directory.
 
 Use following commands
 ```
@@ -118,7 +112,6 @@ python src/main.py denovo --input example_dataset/YOURDATA_reformatted_deepnovo.
 conda activate pointnovo
 python src/main.py denovo --input example_dataset/YOURDATA_reformatted_deepnovo.mgf --output example_dataset/results --pointnovo 1
 ```
-
 
 ### Postprocessing
 
@@ -140,7 +133,6 @@ To finally assembly the sequence, use convertForALPS
 python src/main.py convertForALPS --input example_dataset/results/summary.csv
 ```
 The command will split up the summary file and generate contigs for each tool in results/ALPS_Assembly.
-Finally, it will also generate statistics for your summary file.
 
 
 
