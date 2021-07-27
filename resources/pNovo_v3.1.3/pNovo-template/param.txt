@@ -1,0 +1,100 @@
+[meta]
+#If you want to use Open search, you can set OpenModification 'true'
+OpenModification=false
+MergeResult=false
+
+#If you want to add a variable modification, 
+#please use a letter from (a-z) instead.
+#For example, if M+Oxidation is to be added,
+#you can add the line below(without '#'), 
+#in which 147.0354 = mass(M) + mass(Oxidation)
+
+#a=147.0354
+#b=160.030654
+
+#N- or C- terminal variable modifications can be added as follows (using 0-9)
+
+#0=42.010565
+#1=43.005814
+
+
+#c-term=0.984016
+
+#A fixed modification can be added like (without '#'):
+
+#C=160.030654
+#in which 160.030654 = mass(C) + mass(Carbamidomethyl)
+
+
+#The lines below show the basic ion types of HCD and ETD data.
+HCDIONTYPE=4
+HCDIONTYPE1=b	1 1 1 0.0
+HCDIONTYPE2=y	1 0 1 18.0105647
+HCDIONTYPE3=b	2 1 1 0.0
+HCDIONTYPE4=y	2 0 1 18.0105647
+ETDIONTYPE=6
+ETDIONTYPE1=c 1 1 1 17.026549105
+ETDIONTYPE2=z 1 0 1 1.99129206512
+ETDIONTYPE3=c-1 1 1 0 16.01872407
+ETDIONTYPE4=z+1 1 0 1 2.999665665
+ETDIONTYPE5=c 2 1 0 17.026549105
+ETDIONTYPE6=z 2 0 0 1.99129206512
+
+#[IMPORTANT]
+#An enzyme can be set as: 
+#[EnzymeName] [CleavageSites] [N/C] (Cleave at N- or C- terminal)
+enzyme=Trypsin KR C
+
+#if you want to use multi-threads, please set the number of threads below (1 ~ 8):
+thread=1
+
+#Mass ranges of precursors
+#Only the spectra whose precursors are in the specified mass range will be sequenced.
+mass_lower_bound=300
+mass_upper_bound=3500
+
+#[HCD, CID, ETD]
+activation_type=HCD
+
+#[IMPORTANT]
+#Tolerance of precursors. 
+#If you want to use Daltons, please set 'pep_tol_type_ppm' as 0
+pep_tol=20
+pep_tol_type_ppm=1
+
+#[IMPORTANT]
+#Tolerance of fragment ions. 
+#If you want to use Daltons, please set 'frag_tol_type_ppm' as 0
+frag_tol=20
+frag_tol_type_ppm=1
+
+[file]
+
+#DTA/MS2/MGF are valid options.if DTA is specified, 
+#please set the following path(s) as the folder containing the DTA file(s)
+spec_type=MGF
+
+#1:means only one activation type, CID/HCD/ETD, is used
+#		spec_path1 should be set as the path of the data
+#2:(HCD + ETD) is used. In this case, activation_type is ignored.
+#		spec_path1 should be set as the path of the HCD data,
+#		and spec_path2 should be set as the path of the ETD data.
+spec_path=1
+spec_path1=E:\data
+
+#If only one activation type of spectra is used (spec_path=1),
+#you can specify a folder containing several MS2 or MGF files.
+#Set spec_path1 as the foler,
+#and pNovo+ will sequence the MS/MS data files one by one. 
+#if folder=no, then the value of 'spec_path1' above must be a MS/MS file path. 
+folder=yes
+
+#The folder where the result files are to be output
+out_path=E:\test\
+
+#The number of peptides reported per spectrum
+report_pep=10
+
+report_path=150
+report_temp=800
+max_node=300

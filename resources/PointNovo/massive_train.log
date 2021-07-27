@@ -1,0 +1,20 @@
+python main.py --train
+Training vocab_reverse  ['_PAD', '_GO', '_EOS', 'A', 'R', 'N', 'N(Deamidation)', 'D', 'C(Carbamidomethylation)', 'E', 'Q', 'Q(Deamidation)', 'G', 'H', 'I', 'L', 'K', 'M', 'M(Oxidation)', 'F', 'P', 'S', 'T', 'W', 'Y', 'V']
+Training vocab  {'_PAD': 0, '_GO': 1, '_EOS': 2, 'A': 3, 'R': 4, 'N': 5, 'N(Deamidation)': 6, 'D': 7, 'C(Carbamidomethylation)': 8, 'E': 9, 'Q': 10, 'Q(Deamidation)': 11, 'G': 12, 'H': 13, 'I': 14, 'L': 15, 'K': 16, 'M': 17, 'M(Oxidation)': 18, 'F': 19, 'P': 20, 'S': 21, 'T': 22, 'W': 23, 'Y': 24, 'V': 25}
+Training vocab_size  26
+MAX_LEN  30
+num_ion  12
+weight_decay  0.0
+embedding_size  512
+num_lstm_layers  1
+num_units  64
+batch_size  16
+steps_per_validation  300
+max_gradient_norm  5.0
+Epoch   189: reducing learning rate of group 0 to 5.0000e-04.
+Epoch   246: reducing learning rate of group 0 to 2.5000e-04.
+Epoch   340: reducing learning rate of group 0 to 1.2500e-04.
+Epoch   377: reducing learning rate of group 0 to 6.2500e-05.
+Epoch   398: reducing learning rate of group 0 to 3.1250e-05.
+Epoch   419: reducing learning rate of group 0 to 1.5625e-05.
+Epoch   440: reducing learning rate of group 0 to 1.0000e-05.

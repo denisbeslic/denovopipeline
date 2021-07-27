@@ -1,0 +1,8 @@
+Memory settings read from the user preferences: 4096
+args: --help 
+original java.home: /usr/lib/jvm/java-11-openjdk-amd64/bin/
+new java.home: /usr/lib/jvm/java-11-openjdk-amd64/bin/
+
+Command line: 
+/usr/lib/jvm/java-11-openjdk-amd64/bin/java -splash:resources/conf/denovogui-splash.png -Xms128M -Xmx4096M -cp /home/denis/Downloads/DeNovoGUI-1.16.6/DeNovoGUI-1.16.6.jar com.compomics.denovogui.gui.DeNovoGUI --help 
+Process exitValue: 0

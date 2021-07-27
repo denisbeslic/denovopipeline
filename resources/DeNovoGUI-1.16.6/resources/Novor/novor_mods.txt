@@ -1,0 +1,4 @@
+Oxidation of M, 0, Oxidation of M, -r-, M, , 15.994915
+Deamidation of N, 1, Deamidation of N, -r-, N, , 0.984016
+Deamidation of Q, 2, Deamidation of Q, -r-, Q, , 0.984016
+Carbamidomethylation of C, 3, Carbamidomethylation of C, -r-, C, , 57.021464
