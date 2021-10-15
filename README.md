@@ -6,7 +6,7 @@ denovopipeline uses multiple de novo sequencing algorithms ([pNovo3](http://pfin
 
 ### Download public data
 To download the test data, pre-trained models for PointNovo, SMSNet and DeepNovo use following link:
-https://1drv.ms/f/s!AuC2G9KYrL1KgZJuI0hxrv5QznTU5w
+https://drive.google.com/drive/folders/1LTIfwnPLj7M8xdsSCg8O5ZeZ6HoogHNF?usp=sharing
 
 Move the files to their corresponding directories without renaming.
 
