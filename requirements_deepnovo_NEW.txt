@@ -19,6 +19,6 @@ requests==2.25.1
 six==1.15.0
 statistics==1.0.3.5
 subprocess32==3.5.4
-tensorflow==0.12.0rc0
+tensorflow==0.12.0
 UpSetPlot==0.4.1
 urllib3==1.26.4

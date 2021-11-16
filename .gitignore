@@ -16,3 +16,4 @@ resources/DeepNovo
 resources/DeepNovo_Antibody/train.doremon.resolution_50.epoch_20.da_4500.ab.training.mouse
 resources/PointNovo/train
 example_dataset/
+*MassIVE_HCD/

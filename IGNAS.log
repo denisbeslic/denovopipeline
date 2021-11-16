@@ -1,0 +1,5 @@
+2021-11-15 17:57:16,731 [INFO] __main__: DeNovoSeq Pipeline started.
+2021-11-15 17:57:16,735 [INFO] user_args: De novo sequencing started
+2021-11-15 17:57:16,735 [INFO] denovo: Function denovo_seq was called.
+2021-11-15 17:57:16,735 [INFO] denovo: run_pointnovo called. Sequencing with PointNovo started.
+2021-11-15 22:31:44,807 [INFO] denovo: Sequencing with PointNovo finished. Total time: 274 minutes and 28.1 seconds.

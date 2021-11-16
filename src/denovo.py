@@ -25,12 +25,15 @@ def run_denovogui(mgf_in, dir_out, params):
 
 def run_smsnet(mgf_in, dir_out, smsnet_model):
     logger.info("run_smsnet called. Sequencing with SMSNet started.")
+    cmd = 'conda activate smsnet' 
+    subprocess.call(cmd, shell=True, executable='/bin/bash')
     cwd = os.getcwd()
     start_time1 = time()
     mgf_in = os.path.abspath(mgf_in)
     dir_out = os.path.abspath(dir_out)
     model = os.path.abspath(smsnet_model)
-    os.chdir("resources/SMSNet_backup")
+    #os.chdir("resources/SMSNet_backup")
+    os.chdir("resources/SMSNet")
     os.system(f"python run.py --model_dir {model} --inference_input_file {mgf_in} --inference_output_file {dir_out}"
               f" --rescore")
     os.chdir(cwd)
@@ -96,7 +99,7 @@ def run_pointnovo(mgf_in, dir_out, pointnovo_model):
     if not os.path.exists(f"{dir_out}/PointNovo/"):
         os.makedirs(f"{dir_out}/PointNovo/")
     predict_out = os.path.abspath(f"{dir_out}/PointNovo/features.csv.deepnovo_denovo")
-    configfile = "resources/PointNovo_backup/config.py"
+    configfile = "resources/PointNovo/config.py"
     with open(configfile, 'r') as file:
         data = file.readlines()
 
@@ -110,7 +113,7 @@ def run_pointnovo(mgf_in, dir_out, pointnovo_model):
     with open(configfile, 'w') as file:
         file.writelines(data)
 
-    os.chdir("resources/PointNovo_backup")
+    os.chdir("resources/PointNovo")
     os.system("make denovo")
     os.chdir(cwd)
     pointnovo_time = time() - start_time1

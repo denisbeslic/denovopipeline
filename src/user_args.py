@@ -2,7 +2,7 @@ import argparse
 import sys
 import logging
 from preprocess import reformat_MGF, denovo_setup
-from assembly import convert_For_ALPS
+#from assembly import convert_For_ALPS
 from denovo import denovo_seq
 from createsummary import denovo_summary
 
