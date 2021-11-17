@@ -4,7 +4,7 @@ import logging.config
 import sys
 
 logger = logging.getLogger(__name__)
-
+#https://stackoverflow.com/questions/42097052/can-i-import-pythons-3-6s-formatted-string-literals-f-strings-into-older-3-x
 
 def main():
     test_argv = None

@@ -1,3 +1,5 @@
+# -*- coding: future_fstrings -*-
+
 import os
 import shutil
 import subprocess
@@ -6,7 +8,7 @@ import platform
 import logging
 
 logger = logging.getLogger(__name__)
-
+#https://stackoverflow.com/questions/42097052/can-i-import-pythons-3-6s-formatted-string-literals-f-strings-into-older-3-x
 
 def run_denovogui(mgf_in, dir_out, params):
     logger.info("run_denovogui called. Sequencing with Novor started.")
@@ -25,8 +27,6 @@ def run_denovogui(mgf_in, dir_out, params):
 
 def run_smsnet(mgf_in, dir_out, smsnet_model):
     logger.info("run_smsnet called. Sequencing with SMSNet started.")
-    cmd = 'conda activate smsnet' 
-    subprocess.call(cmd, shell=True, executable='/bin/bash')
     cwd = os.getcwd()
     start_time1 = time()
     mgf_in = os.path.abspath(mgf_in)
@@ -55,7 +55,7 @@ def run_deepnovo(mgf_in, dir_out, deepnovo_model):
 
     # manipulate config file to change to correct input
 
-    configfile = "resources/DeepNovo_Antibody_backup/data_utils.py"
+    configfile = "resources/DeepNovo_Antibody/data_utils.py"
     with open(configfile, 'r') as file:
         data = file.readlines()
     for i in range(len(data)):
@@ -65,7 +65,7 @@ def run_deepnovo(mgf_in, dir_out, deepnovo_model):
     with open(configfile, 'w') as file:
         file.writelines(data)
 
-    os.chdir("resources/DeepNovo_Antibody_backup")
+    os.chdir("resources/DeepNovo_Antibody")
     traindir = os.path.abspath(deepnovo_model)
     os.system(f"python main.py --train_dir {traindir} --decode --beam_search --beam_size 10")
     os.chdir(cwd)
