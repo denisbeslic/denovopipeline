@@ -289,9 +289,9 @@ input_feature_file_valid = "/home/dbeslic/master/DeepLearning_TrainingData/02_NI
 input_spectrum_file_test = "/home/dbeslic/master/DeepLearning_TrainingData/02_NISTmAb/ONLY_NistMab/spectrum.mgf"
 input_feature_file_test = "/home/dbeslic/master/DeepLearning_TrainingData/02_NISTmAb/ONLY_NistMab/features.test.csv"
 # denovo files
-denovo_input_spectrum_file = "/scratch/beslicd/proteomics/denovopipeline/example_dataset/Peng2021_Herceptin_aLP_reformatted.mgf"
+denovo_input_spectrum_file = "/scratch/beslicd/proteomics/denovopipeline/example_dataset/Peng2021_Herceptin_chymo_reformatted.mgf"
 denovo_input_feature_file  = "/scratch/beslicd/proteomics/denovopipeline/example_dataset/features.csv"
-denovo_output_file = "/scratch/beslicd/proteomics/denovopipeline/example_dataset/results/PointNovo/features.csv.deepnovo_denovo"
+denovo_output_file = "/scratch/beslicd/proteomics/denovopipeline/example_dataset/results_chymo/PointNovo/features.csv.deepnovo_denovo"
 
 # db search files
 search_db_input_spectrum_file = "Lumos_data/PXD008999/export_0.mgf"

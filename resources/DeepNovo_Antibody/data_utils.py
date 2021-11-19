@@ -396,8 +396,8 @@ input_file_test = "/home/dbeslic/master/DeepLearning_TrainingData/06_MassIVE_HCD
 #~ decode_test_file = "data/ab.testing/assem.public.human.heavy/peaks.refine.mgf"
 
 # Assem-TESTING-PUBLIC-MOUSE-HEAVY
-input_file_test = "/home/dbeslic/master/antibody-de-novo-sequencing/example_dataset/01-raw-data/Heavy-Chain-Chymotrypsin-1_reformatted_deepnovo.mgf"
-decode_test_file = "/home/dbeslic/master/antibody-de-novo-sequencing/example_dataset/01-raw-data/Heavy-Chain-Chymotrypsin-1_reformatted_deepnovo.mgf"
+input_file_test = "/scratch/beslicd/proteomics/denovopipeline/example_dataset/Peng2021_Herceptin_aLP_reformatted_deepnovo.mgf"
+decode_test_file = "/scratch/beslicd/proteomics/denovopipeline/example_dataset/Peng2021_Herceptin_aLP_reformatted_deepnovo.mgf"
 
 # AB-TESTING-MOUSE-WATERS-HEAVY
 #~ input_file_test = "data/ab.testing/ab.mouse.waters.heavy/peaks.db.mgf"
