@@ -59,7 +59,7 @@ hparams = tf.contrib.training.HParams(
       #embed_prefix=flags.embed_prefix,
       out_dir="log_ablation/log_best_700k...",# encoder_to_decoder_lookahead", # "log_nomod_full", #"test_one",
       tgt_vocab_file="nmt/vocab/vocab.txt",# "nmt/vocab/vocab_m.txt",
-      tgt_vocab_size=27, # 27,
+      tgt_vocab_size=26, # 26
       tgt_embed_file="",
       
       # dev="data_mod_m/val_no_dup",  # "data_nomod_full/val_no_dup",
@@ -217,7 +217,7 @@ if __name__ == "__main__":
       print("Done")
     
       # Create report if m_mod(21 AAs + 3 tokens) or p_mod (24 AAs + 3 tokens)
-      if hparams.tgt_vocab_size == 24:
+      if hparams.tgt_vocab_size in (24, 26):
         report_utils.main(trans_dir, input_dir, 'm-mod')
       elif hparams.tgt_vocab_size == 27:
         report_utils.main(trans_dir, input_dir, 'p-mod')

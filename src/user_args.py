@@ -42,15 +42,15 @@ def setup(test_argv=None):
                                          help='Location of Parameter File for DeNovoCli. See documentation of '
                                               'DeNovoGUI for building paramter. If none is given it will use '
                                               'resources/DeNovoGUI-1.16.6/newparameter.par')
-    denovosequencing_parser.add_argument('--smsnet_model', default="resources/SMSNet_backup/MassIVE_HCD/", type=str,
+    denovosequencing_parser.add_argument('--smsnet_model', default="resources/SMSNet/MassIVE_HCD/", type=str,
                                          help='Location of Model for SMSNet. If none is given it will use '
-                                              'resources/SMSNet_backup/MassIVE_HCD')
+                                              'resources/SMSNet/MassIVE_HCD')
     denovosequencing_parser.add_argument('--deepnovo_model',
                                          default="MassIVE_HCD",
                                          type=str,
                                          help='Location of Model for DeepNovo (PNAS). If none is given it will use resources/DeepNovo_Antibody/MassIVE_HCD')
     denovosequencing_parser.add_argument('--pointnovo_model', default="train", type=str,
-                                         help='Location of Model for PointNovo. Default: train_NIST_HCD_5epochs/')
+                                         help='Location of Model for PointNovo. Default: train/')
     setupdenovo_parser = subparsers.add_parser('setup',
                                                help='Downloads knapsack, pre-trained models and test data')
     summary_parser = subparsers.add_parser('summary',
