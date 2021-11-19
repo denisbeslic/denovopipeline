@@ -8,7 +8,6 @@ import platform
 import logging
 
 logger = logging.getLogger(__name__)
-#https://stackoverflow.com/questions/42097052/can-i-import-pythons-3-6s-formatted-string-literals-f-strings-into-older-3-x
 
 def run_denovogui(mgf_in, dir_out, params):
     logger.info("run_denovogui called. Sequencing with Novor started.")
@@ -30,17 +29,19 @@ def run_smsnet(mgf_in, dir_out, smsnet_model):
     cwd = os.getcwd()
     start_time1 = time()
     mgf_in = os.path.abspath(mgf_in)
+    #if not os.path.exists(f"{dir_out}/SMSNet/"):
+    #    os.makedirs(f"{dir_out}/SMSNet/")
     dir_out = os.path.abspath(dir_out)
     model = os.path.abspath(smsnet_model)
-    #os.chdir("resources/SMSNet_backup")
     os.chdir("resources/SMSNet")
-    os.system(f"python run.py --model_dir {model} --inference_input_file {mgf_in} --inference_output_file {dir_out}"
-              f" --rescore")
+    os.system(f"python run.py --model_dir {model} --inference_input_file {mgf_in} --inference_output_file {dir_out}")
     os.chdir(cwd)
     smsnet_output = mgf_in.rpartition('/')
-    tsvfile = smsnet_output[0] + "_p-mod_fdr10.tsv"
+    #tsvfile = smsnet_output[0] + "_p-mod_fdr10.tsv"
     resultsdir = smsnet_output[0] + "_output/"
     file_name = smsnet_output[2].replace('.mgf', '')
+    original = os.path.join(cwd, 'example_dataset_output')
+    shutil.move(original, os.path.join(dir_out, "SMSNet"))
     smsnet_time = time() - start_time1
     minute = int(smsnet_time // 60)
     sec = round(smsnet_time - minute * 60, 1)
