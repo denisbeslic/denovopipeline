@@ -1,5 +1,6 @@
 *.html
 *.tsv
+*.pyc
 *.fasta.gz
 *.mgf*
 *.mgf
@@ -9,6 +10,7 @@
 *napsack*
 job*
 *ckpt*
+*.log
 
 src/__pycache__/
 resources/SMSNet/smsnet_phospho/
@@ -16,4 +18,4 @@ resources/DeepNovo
 resources/DeepNovo_Antibody/train.doremon.resolution_50.epoch_20.da_4500.ab.training.mouse
 resources/PointNovo/train
 example_dataset/
-*MassIVE_HCD/
+*MassIVE_HCD*
