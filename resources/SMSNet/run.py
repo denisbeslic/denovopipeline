@@ -108,7 +108,7 @@ hparams = tf.contrib.training.HParams(
       tgt_max_len=None,
 
       # Inference
-      src_max_len_infer=None, #flags.src_max_len_infer,+
+      src_max_len_infer=False, #flags.src_max_len_infer,+
       tgt_max_len_infer=50, #flags.tgt_max_len_infer,
       infer_batch_size=8,
       beam_width=20, ###############################################
@@ -179,11 +179,11 @@ if __name__ == "__main__":
     hparams.inference_indices = None
     print(infer_input_file)
     
-    # trans_file = args.inference_output_file
+    #trans_file = args.inference_output_file
     source_filename = os.path.basename(infer_input_file)[:-4] # no ".mgf"
     input_dir = os.path.dirname(infer_input_file)
 
-    trans_dir = input_dir + '_output/'
+    trans_dir = args.inference_output_file
     trans_file = os.path.join(trans_dir, source_filename)
     # print(trans_path, trans_file)
     if not os.path.exists(trans_dir):

@@ -46,6 +46,7 @@ def _decode_inference_indices(model, sess, output_infer,
     trans_f.write("")  # Write empty string to ensure file is created.
     for decode_id in inference_indices:
       nmt_outputs, infer_summary = model.decode(sess)
+      
 
       # get text translation
       assert nmt_outputs.shape[0] == 1
@@ -54,6 +55,7 @@ def _decode_inference_indices(model, sess, output_infer,
           sent_id=0,
           tgt_eos=tgt_eos,
           subword_option=subword_option)
+      
 
       if infer_summary is not None:  # Attention models
         image_file = output_infer_summary_prefix + str(decode_id) + ".png"

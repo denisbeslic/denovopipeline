@@ -29,19 +29,13 @@ def run_smsnet(mgf_in, dir_out, smsnet_model):
     cwd = os.getcwd()
     start_time1 = time()
     mgf_in = os.path.abspath(mgf_in)
-    #if not os.path.exists(f"{dir_out}/SMSNet/"):
-    #    os.makedirs(f"{dir_out}/SMSNet/")
-    dir_out = os.path.abspath(dir_out)
+    dir_out = os.path.join(os.path.abspath(dir_out),"SMSNet")
+    if not os.path.exists(f"{dir_out}"):
+        os.makedirs(f"{dir_out}")
     model = os.path.abspath(smsnet_model)
     os.chdir("resources/SMSNet")
     os.system(f"python run.py --model_dir {model} --inference_input_file {mgf_in} --inference_output_file {dir_out}")
     os.chdir(cwd)
-    smsnet_output = mgf_in.rpartition('/')
-    #tsvfile = smsnet_output[0] + "_p-mod_fdr10.tsv"
-    resultsdir = smsnet_output[0] + "_output/"
-    file_name = smsnet_output[2].replace('.mgf', '')
-    original = os.path.join(cwd, 'example_dataset_output')
-    shutil.move(original, os.path.join(dir_out, "SMSNet"))
     smsnet_time = time() - start_time1
     minute = int(smsnet_time // 60)
     sec = round(smsnet_time - minute * 60, 1)
