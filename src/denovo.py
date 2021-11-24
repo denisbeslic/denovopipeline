@@ -2,12 +2,39 @@
 
 import os
 import shutil
-import subprocess
 from time import time
 import platform
 import logging
+import subprocess
+import shlex
 
 logger = logging.getLogger(__name__)
+
+def log_subprocess_output(pipe):
+    for line in iter(pipe.readline, b''): # b'\n'-separated lines
+        logging.info('got line from subprocess: %r', line)
+
+def run_shell_command(command_line):
+    command_line_args = shlex.split(command_line)
+
+    logging.info('Subprocess: "' + command_line + '"')
+
+    try:
+        command_line_process = subprocess.Popen(
+            command_line_args,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+        )
+        with command_line_process.stdout:
+            for line in iter(command_line_process.stdout.readline, b''):
+                logging.debug(line.decode("utf-8").strip())
+    except (OSError) as exception:
+        logging.info('Exception occured: ' + str(exception))
+        logging.info('Subprocess failed')
+        return False
+    else:
+        logging.info('Subprocess finished')
+    return True
 
 def run_denovogui(mgf_in, dir_out, params):
     logger.info("run_denovogui called. Sequencing with Novor started.")
@@ -34,7 +61,8 @@ def run_smsnet(mgf_in, dir_out, smsnet_model):
         os.makedirs(f"{dir_out}")
     model = os.path.abspath(smsnet_model)
     os.chdir("resources/SMSNet")
-    os.system(f"python run.py --model_dir {model} --inference_input_file {mgf_in} --inference_output_file {dir_out}")
+    run_shell_command(f"python run.py --model_dir {model} --inference_input_file {mgf_in} --inference_output_file {dir_out}")
+    #os.system(f"python run.py --model_dir {model} --inference_input_file {mgf_in} --inference_output_file {dir_out}")
     os.chdir(cwd)
     smsnet_time = time() - start_time1
     minute = int(smsnet_time // 60)

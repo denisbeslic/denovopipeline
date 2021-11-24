@@ -1,10 +1,13 @@
+# -*- coding: future_fstrings -*-
+
 import user_args
 import logging
 import logging.config
+from datetime import datetime
+import os
 import sys
 
 logger = logging.getLogger(__name__)
-#https://stackoverflow.com/questions/42097052/can-i-import-pythons-3-6s-formatted-string-literals-f-strings-into-older-3-x
 
 def main():
     test_argv = None
@@ -13,7 +16,10 @@ def main():
     sys.exit(0)
 
 if __name__ == '__main__':
-    log_file_name = 'IGNAS.log'
+    date = datetime.now().strftime("%Y-%m-%d_%I-%M-%S")
+    log_file_name = (f"log/denovopipeline_{date}.log")
+    if not os.path.exists("log/"):
+        os.makedirs("log/")
     d = {
         'version': 1,
         'disable_existing_loggers': False,

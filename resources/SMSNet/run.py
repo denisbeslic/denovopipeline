@@ -165,7 +165,6 @@ if __name__ == "__main__":
                       help="Checkpoint file to load a model for inference.")
   parser.add_argument("--model_dir", type=str, default="",
                       help="Directory to load a model for inference.")
-  
   parser.add_argument("--rescore", type="bool", nargs="?", const=True,
                       default=False,
                       help="Rescore with previously trained model.")

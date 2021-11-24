@@ -2,7 +2,6 @@ import argparse
 import sys
 import logging
 from preprocess import reformat_MGF, denovo_setup
-#from assembly import convert_For_ALPS
 from denovo import denovo_seq
 from createsummary import denovo_summary
 
@@ -86,6 +85,7 @@ def setup(test_argv=None):
         denovo_summary(args.input, args.results, args.dbreport)
         sys.exit(0)
     elif args.subparser_name == 'assembly':
+        from assembly import convert_For_ALPS
         logger.info("Assembly started.")
         convert_For_ALPS(args.input)
         sys.exit(0)

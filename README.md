@@ -120,7 +120,7 @@ After having used all desired denovo tools, use `denovo_summary` to generate the
 You need to specify the directory where all the de novo results are stored and provide your initial reformatted mgf file to correctly assign the predictions to each spectrum.
 
 ``` 
-python src/main.py summary  summary --input example_dataset/YOURDATA_reformatted.mgf --results example_dataset/results/
+python src/main.py summary --input example_dataset/YOURDATA_reformatted.mgf --results example_dataset/results/
 ```
 The summary file will be generated in your results directory and include Spectrum Title, Peptide Prediction, Peptide Score, Single Amino Acid score for each tool.
 It will also generate a "BEST" column, which compares the scores the tools and chooses the one with the highest score for each spectrum.
