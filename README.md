@@ -1,6 +1,6 @@
-# denovopipeline
+# Denovopipeline
 
-denovopipeline uses multiple de novo sequencing algorithms ([pNovo3](http://pfind.ict.ac.cn/software/pNovo/index.html), [SMSNet](https://github.com/cmb-chula/SMSNet/tree/master#readme), [Novor](https://github.com/compomics/denovogui), [DeepNovo](https://github.com/nh2tran/DeepNovo), [PointNovo](https://github.com/volpato30/PointNovo), [PepNovo+](https://pubmed.ncbi.nlm.nih.gov/15858974/)) identification and assembly of peptide sequences by tandem mass spectrometry.
+Denovopipeline uses multiple de novo sequencing algorithms ([pNovo3](http://pfind.ict.ac.cn/software/pNovo/index.html), [SMSNet](https://github.com/cmb-chula/SMSNet/tree/master#readme), [Novor](https://github.com/compomics/denovogui), [DeepNovo](https://github.com/nh2tran/DeepNovo), [PointNovo](https://github.com/volpato30/PointNovo), [PepNovo+](https://pubmed.ncbi.nlm.nih.gov/15858974/)) for identification and assembly of peptide sequences by tandem mass spectrometry.
 
 ## How to use
 
