@@ -54,7 +54,7 @@ def process_novor(novor_path):
             # Replace the specific annotation of Novor for Modifications
             novor_peptide = novor_df['Novor Peptide'].tolist()
             novor_df['Novor Peptide'] = [i.replace('M(0)', 'm').replace('Q(2)', 'q').replace('N(1)', 'n').replace(' ',
-                                        '').replace('C(3)', 'C') for i in novor_peptide]
+                                        '').replace('C(3)', 'C').replace('Q(0)','q').replace('M(2)','m') for i in novor_peptide]
             return novor_df
     except IOError:
         logger.error(f"Novor results not accessible. Make sure they are placed in {novor_path}")
@@ -382,10 +382,10 @@ def denovo_summary(mgf_in, resultdir, dbreport):
     novor_path = resultdir + 'DeNovoCLI/' + mgf_in + '.novor.csv'
     novor_df = process_novor(novor_path)
     # PepNovo
-    pepnovo_path = resultdir + 'DeNovoCLI/' + mgf_in + '.mgf.out'
-    pepnovo_df = process_pepnovo(pepnovo_path)
+    #pepnovo_path = resultdir + 'DeNovoCLI/' + mgf_in + '.mgf.out'
+    #pepnovo_df = process_pepnovo(pepnovo_path)
     # SMSNet
-    smsnet_path = resultdir + "smsnet/" + mgf_in
+    smsnet_path = resultdir + "SMSNet/" + mgf_in
     smsnet_df = process_smsnet(smsnet_path)
     # DeepNovo
     deepnovo_path = resultdir + "DeepNovo/" + mgf_in + "_deepnovo.tab"
@@ -399,7 +399,8 @@ def denovo_summary(mgf_in, resultdir, dbreport):
     # input MGF file
     spectrum_name, charge_sp = access_mgf_file(mgf_in_path)
 
-    tools_list = [novor_df, pepnovo_df, smsnet_df, deepnovo_df, pointnovo_df, pnovo_df]
+    #tools_list = [novor_df, pepnovo_df, smsnet_df, deepnovo_df, pointnovo_df, pnovo_df]
+    tools_list = [novor_df, smsnet_df, deepnovo_df, pointnovo_df, pnovo_df]
     summary_df = pd.concat(tools_list, axis=1)
     summary_df.insert(0, 'Spectrum Name', spectrum_name)
     summary_df.insert(1, 'Charge', charge_sp)

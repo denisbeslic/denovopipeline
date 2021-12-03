@@ -4,10 +4,12 @@ import numpy as np
 import os
 import pandas as pd
 import subprocess
+import matplotlib
+matplotlib.use('pdf')
 from matplotlib import pyplot as plt
 from sklearn import metrics
 import tikzplotlib
-from diff_match_patch import diff
+from fast_diff_match_patch import diff
 import logging
 
 from config import vocab, _match_AA_novor, arePermutation, tools_list, figure_colors
