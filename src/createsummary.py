@@ -354,7 +354,7 @@ def process_peptideshaker(dbreport_path):
                 "C<cmm>", "C").replace("M<ox>", "m").replace("pyro-", "")).replace("N<deam>", "n").replace("Q<deam>",
                                                                                                            "q") for i in
                                                 db_peptide]
-            dbreport_df = dbreport_df[['Index', 'Modified Sequence', 'Validation', 'Spectrum Title']]
+            dbreport_df = dbreport_df[['Index', 'Modified Sequence', 'Validation', 'Spectrum Title', 'Confidence [%]']]
             dbreport_df = dbreport_df.set_index('Index').sort_index()
             return dbreport_df
     except IOError:
@@ -374,42 +374,54 @@ def denovo_summary(mgf_in, resultdir, dbreport):
     """
 
     logger.debug("Function denovo_summary was called.")
-    mgf_in_path = mgf_in
-    mgf_in = mgf_in.rpartition("/")
-    mgf_in = mgf_in[-1].rpartition(".mgf")[0]
 
-    # Novor
-    novor_path = resultdir + 'DeNovoCLI/' + mgf_in + '.novor.csv'
-    novor_df = process_novor(novor_path)
-    # PepNovo
-    #pepnovo_path = resultdir + 'DeNovoCLI/' + mgf_in + '.mgf.out'
-    #pepnovo_df = process_pepnovo(pepnovo_path)
-    # SMSNet
-    smsnet_path = resultdir + "SMSNet/" + mgf_in
-    smsnet_df = process_smsnet(smsnet_path)
-    # DeepNovo
-    deepnovo_path = resultdir + "DeepNovo/" + mgf_in + "_deepnovo.tab"
-    deepnovo_df = process_deepnovo(deepnovo_path)
-    # PointNovo
-    pointnovo_path = resultdir + "PointNovo/features.csv.deepnovo_denovo"
-    pointnovo_df = process_pointnovo(pointnovo_path)
-    # pNovo3
-    pnovo_path = resultdir + "pNovo3/result/results.res"
-    pnovo_df = process_pnovo(pnovo_path)
-    # input MGF file
-    spectrum_name, charge_sp = access_mgf_file(mgf_in_path)
+    try:
+        mgf_in_path = mgf_in
+        mgf_in = mgf_in.rpartition("/")
+        mgf_in = mgf_in[-1].rpartition(".mgf")[0]
+        # Novor
+        novor_path = resultdir + 'DeNovoCLI/' + mgf_in + '.novor.csv'
+        novor_df = process_novor(novor_path)
+        # PepNovo
+        #pepnovo_path = resultdir + 'DeNovoCLI/' + mgf_in + '.mgf.out'
+        #pepnovo_df = process_pepnovo(pepnovo_path)
+        # SMSNet
+        smsnet_path = resultdir + "SMSNet/" + mgf_in
+        smsnet_df = process_smsnet(smsnet_path)
+        # DeepNovo
+        deepnovo_path = resultdir + "DeepNovo/" + mgf_in + "_deepnovo.tab"
+        deepnovo_df = process_deepnovo(deepnovo_path)
+        # PointNovo
+        pointnovo_path = resultdir + "PointNovo/features.csv.deepnovo_denovo"
+        pointnovo_df = process_pointnovo(pointnovo_path)
+        # pNovo3
+        pnovo_path = resultdir + "pNovo3/result/results.res"
+        pnovo_df = process_pnovo(pnovo_path)
+        # input MGF file
+        spectrum_name, charge_sp = access_mgf_file(mgf_in_path)
 
-    #tools_list = [novor_df, pepnovo_df, smsnet_df, deepnovo_df, pointnovo_df, pnovo_df]
-    tools_list = [novor_df, smsnet_df, deepnovo_df, pointnovo_df, pnovo_df]
-    summary_df = pd.concat(tools_list, axis=1)
-    summary_df.insert(0, 'Spectrum Name', spectrum_name)
-    summary_df.insert(1, 'Charge', charge_sp)
+        #tools_list = [novor_df, pepnovo_df, smsnet_df, deepnovo_df, pointnovo_df, pnovo_df]
+        tools_list = [novor_df, smsnet_df, deepnovo_df, pointnovo_df, pnovo_df]
+        summary_df = pd.concat(tools_list, axis=1)
+        summary_df.insert(0, 'Spectrum Name', spectrum_name)
+        summary_df.insert(1, 'Charge', charge_sp)
 
-    # Extended PSM Report of Peptide Shaker
-    dbreport_df = process_peptideshaker(dbreport)
+        # Extended PSM Report of Peptide Shaker
+        dbreport_df = process_peptideshaker(dbreport)
 
-    # Concat the de novo summary with the PeptideShaker Report
-    summary_df = pd.concat([summary_df, dbreport_df], axis=1)
-    summary_df.index.name = "Index"
-    summary_df.to_csv(resultdir + 'summary.csv', index=True)
-    logger.info("Export of summary.csv successful!")
+        # Concat the de novo summary with the PeptideShaker Report
+        summary_df = pd.concat([summary_df, dbreport_df], axis=1)
+        summary_df.index.name = "Index"
+        print(summary_df)
+        summary_df.to_csv(resultdir + 'summary.csv', index=True)
+        logger.info("Export of summary.csv successful!")
+    except IOError:
+        print("Input MGF file not accessible")
+
+
+
+
+
+    
+
+    

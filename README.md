@@ -118,9 +118,10 @@ python src/main.py denovo --input example_dataset/YOURDATA_reformatted_deepnovo.
 
 After having used all desired denovo tools, use `denovo_summary` to generate the summary file. 
 You need to specify the directory where all the de novo results are stored and provide your initial reformatted mgf file to correctly assign the predictions to each spectrum.
+Additionally, you can specify a feature file from Peptide Shaker to compare your de novo sequencing results with Database results. We recommend using DeNovoGUI and PeptideShaker and exporting the "Default PSM Report\ with non-validated matches".
 
 ``` 
-python src/main.py summary --input example_dataset/YOURDATA_reformatted.mgf --results example_dataset/results/
+python src/main.py summary --input example_dataset/YOURDATA_reformatted.mgf --results example_dataset/results/ --db example_dataset/results/Default\ PSM\ Report\ with\ non-validated\ matches.txt
 ```
 The summary file will be generated in your results directory and include Spectrum Title, Peptide Prediction, Peptide Score, Single Amino Acid score for each tool.
 It will also generate a "BEST" column, which compares the scores the tools and chooses the one with the highest score for each spectrum.
@@ -134,6 +135,7 @@ To finally assembly the sequence, use convertForALPS
 python src/main.py convertForALPS --input example_dataset/results/summary.csv
 ```
 The command will split up the summary file and generate contigs for each tool in results/ALPS_Assembly.
+It will also create several figures and stats if desired. 
 
 
 

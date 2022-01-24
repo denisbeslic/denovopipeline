@@ -563,6 +563,10 @@ def generate_stats(summary_df, resultdir):
 
 def convert_For_ALPS(summary_csv):
     logger.info("Converting to ALPS started.")
+
+    #TODO: Argument for ALPS assembly
+    #TODO: Argument for turning summary pictures on / off 
+
     resultdir = summary_csv.rpartition('/')[0] + '/ALPS_Assembly/'
     try:
         os.makedirs(resultdir)

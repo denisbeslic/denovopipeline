@@ -56,7 +56,7 @@ def setup(test_argv=None):
                                            help='Create Summary File')
     summary_parser.add_argument('-i', '--input', help='Input MGF file')
     summary_parser.add_argument('-r', '--results', help='Result Directory containing results from single de novo tools')
-    summary_parser.add_argument('-db', '--dbreport', default=None,
+    summary_parser.add_argument('-db', '--dbreport', default="",
                                 help='Path to the exported PSM Report by PeptideShaker')
 
     convertForALPS_parser = subparsers.add_parser('assembly',
