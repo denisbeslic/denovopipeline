@@ -4,24 +4,16 @@ Denovopipeline uses multiple de novo sequencing algorithms ([pNovo3](http://pfin
 
 ## How to use
 
-### Download public data
-To download the test data, pre-trained models for PointNovo, SMSNet and DeepNovo use following link:
+### Download pre-trained models
+To download the pre-trained models for PointNovo, SMSNet and DeepNovo use following link:
 https://drive.google.com/drive/folders/1LFmez1yq7eXNTNs7IWhYy9vQpLzD8rLI?usp=sharing
 
-Move the files to their corresponding directories without renaming.
-
-`smsnet_phospho/` to `resources/SMSNet`
-
-`train/` to `resources/PointNovo`
-
-`train.doremon.resolution_50.epoch_20.da_4500.ab.training.mouse/` to `resources/DeepNovo`
-
-`knapsack.npy` to `resources/PointNovo` and `resources/DeepNovo`
-
+Move each corressonding model to the resources/ directory of each de novo sequencing tool.
+Move `knapsack.npy` to `resources/PointNovo` and `resources/DeepNovo`. 
 
 ### Format raw data
 
-The de novo sequencing step requires mgf (Mascot generic format) files.
+De novo sequencing requires mgf (Mascot generic format) files.
 
 You can use Proteowizard `msconvert` to convert your .raw/.mzxml/.mzml files to .mgf format. Proteowizard can be simply installed using [conda](https://anaconda.org/bioconda/proteowizard).
 
@@ -37,19 +29,17 @@ CHARGE=2+
 145.9389801 163.0
 145.9406433 490.0
 145.9423218 762.0
-[...]
+...
 END IONS
 ```
 
 ### Reformat mgf file
 Another reformatting operation is necessary, because certain tools ignore the old indexing and do not work with predefined
-IDs.
-Spectrum indices and scan IDs are changed to integers from 1 to N. Information on old IDs is preserved in the TITLE line.
+IDs. Spectrum indices and scan IDs are changed to integers from 1 to N. Information on old IDs is preserved in the TITLE line.
 
 `python main.py reformatMGF --input YOURDATA.mgf --output YOURDATA_reformatted.mgf`
 
-It will produce two .mgf files. One called YOURDATA_reformatted_deepnovo.mgf for DeepNovo and PointNovo and another one called YOURDATA_reformatted.mgf for all other tools.
-The file for DeepNovo includes the 'SEQ=' line, which is necessary for DeepNovo to run.
+This will produce two .mgf files. One called YOURDATA_reformatted_deepnovo.mgf for DeepNovo and PointNovo and another one called YOURDATA_reformatted.mgf for all other tools. The file for DeepNovo includes the 'SEQ=' line, which is necessary for DeepNovo to run.
 
 Your final *_reformatted.mgf file should now look like this.
 ```
@@ -61,10 +51,10 @@ SCANS=1
 RTINSECONDS=852.852
 SEQ=AAAAAA
 145.9389801 163.0
-[...]
+...
 END IONS
 ```
-It is very important that your files use the same formatting. Otherwise, the de novo sequencing step will not work correctly.
+It is very important that your files use the same formatting. Otherwise, the de novo sequencing and summary step will not work correctly.
 
 
 ### Build Conda Environments
@@ -94,7 +84,7 @@ pip install -r requirements_pointnovo.txt
 
 ### Run de novo sequencing tools
 
-Novor and PepNovo+ will be executed by using DeNovoCLI from DeNovoGUI. It is necessary to provide a parameter file. We recommend using the [instructions from DeNovoCLI](https://github.com/compomics/denovogui/wiki/IdentificationParametersCLI).
+Novor will be executed by using DeNovoCLI from DeNovoGUI. It is necessary to provide a parameter file. We recommend using the [instructions from DeNovoCLI](https://github.com/compomics/denovogui/wiki/IdentificationParametersCLI).
 
 PointNovo, SMSNet and DeepNovo need to be run separately, because they use different dependencies. We provide some pre-trained models, but it is recommended to train models yourself. You can change the model each DeepLearning Tool is using by using the command line arguments `--smsnet_model`, `--deepnovo_model` and `--pointnovo_model`
 
@@ -116,15 +106,14 @@ python src/main.py denovo --input example_dataset/YOURDATA_reformatted_deepnovo.
 
 ### Postprocessing
 
-After having used all desired denovo tools, use `denovo_summary` to generate the summary file. 
-You need to specify the directory where all the de novo results are stored and provide your initial reformatted mgf file to correctly assign the predictions to each spectrum.
-Additionally, you can specify a feature file from Peptide Shaker to compare your de novo sequencing results with Database results. We recommend using DeNovoGUI and PeptideShaker and exporting the "Default PSM Report\ with non-validated matches".
+After having used all desired utilized all denovo tools, use `denovo_summary` to generate the summary file. 
+You need to specify the directory where all the de novo results are stored and provide your initial reformatted mgf file to correctly assign the predictions to each spectrum. Additionally, you can specify a feature file from Peptide Shaker to compare your de novo sequencing results with Database results. We recommend using DeNovoGUI and PeptideShaker and exporting the "Default PSM Report with non-validated matches".
 
 ``` 
 python src/main.py summary --input example_dataset/YOURDATA_reformatted.mgf --results example_dataset/results/ --db example_dataset/results/Default\ PSM\ Report\ with\ non-validated\ matches.txt
 ```
+
 The summary file will be generated in your results directory and include Spectrum Title, Peptide Prediction, Peptide Score, Single Amino Acid score for each tool.
-It will also generate a "BEST" column, which compares the scores the tools and chooses the one with the highest score for each spectrum.
 
 
 ### Assembly results
