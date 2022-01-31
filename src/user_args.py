@@ -62,6 +62,11 @@ def setup(test_argv=None):
     convertForALPS_parser = subparsers.add_parser('assembly',
                                                   help='Takes single results from DeNovoTools, parses them und runs ALPS for assembly')
     convertForALPS_parser.add_argument('-i', '--input', help='path to summary.csv file')
+    convertForALPS_parser.add_argument('-k', '--kmer', help='Length of k-mers for ALPS, 6 or 7 is recommended', default=7)
+    convertForALPS_parser.add_argument('-c', '--contigs', help='Number of top contigs to use for assembly of ALPS', default=20)
+    convertForALPS_parser.add_argument('-q', '--quality-cutoff', help='Threshold of Quality Cutoff. All Peptides below this score will not be used for assembly.', default=50)
+    convertForALPS_parser.add_argument('-s', '--create-stats', help='Option to export Stats about Recall and Precision using the results from database search', default=True)
+
 
     args = parser.parse_args()
     if args.subparser_name == 'setup':
@@ -87,7 +92,7 @@ def setup(test_argv=None):
     elif args.subparser_name == 'assembly':
         from assembly import convert_For_ALPS
         logger.info("Assembly started.")
-        convert_For_ALPS(args.input)
+        convert_For_ALPS(args.input, args.kmer, args.contigs, args.quality_cutoff, args.create_stats)
         sys.exit(0)
     elif args.subparser_name == None:
         logger.info("Unspecified Mode.")

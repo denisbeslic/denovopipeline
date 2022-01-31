@@ -37,7 +37,7 @@ def process_summaryfile(summary_csv):
         logger.error(f"Summary File is not accessible. Make sure it's in {summary_csv}")
 
 
-def process_ALPS(summary_df, resultdir):
+def process_ALPS(summary_df, resultdir, kmer_ALPS, contigs_ALPS, quality_cutoff_ALPS):
     """process summary file with ALPS to assemble full sequence
             :param
                 summary_df: dataframe of different tools with score, peptide and aascore
@@ -70,17 +70,18 @@ def process_ALPS(summary_df, resultdir):
 
         # will drop empty Peptides
 
+
         alps_df.dropna(subset=[i + " Peptide"], inplace=True)
         alps_df.to_csv(resultdir + i + '_totalscore.csv', index=False)
-        subprocess.run(('java', '-jar', 'resources/ALPS.jar', resultdir + i + '_totalscore.csv', '6', '20', '>>',
+        subprocess.run(('java', '-jar', 'resources/ALPS.jar', resultdir + i + '_totalscore.csv', str(kmer_ALPS), str(contigs_ALPS), '>>',
                         resultdir + 'assembly.log'), stdout=subprocess.DEVNULL)
 
-        # Quality Cut-Off for assembly at 50% Peptide Score
+        # Quality Cut-Off for assembly at given de novo Peptide Score
 
-        alps_df = alps_df[alps_df[i + " Score"] > 50]
-        alps_df.to_csv(resultdir + i + '_totalscore_cutoff50.csv', index=False)
+        alps_df = alps_df[alps_df[i + " Score"] > quality_cutoff_ALPS]
+        alps_df.to_csv(resultdir + i + f'_totalscore_cutoff_{str(quality_cutoff_ALPS)}.csv', index=False)
         subprocess.run(
-            ('java', '-jar', 'resources/ALPS.jar', resultdir + i + '_totalscore_cutoff50.csv', '6', '20', '>>',
+            ('java', '-jar', 'resources/ALPS.jar', resultdir + i + f'_totalscore_cutoff_{str(quality_cutoff_ALPS)}.csv', str(kmer_ALPS), str(contigs_ALPS), '>>',
              resultdir + 'assembly.log'), stdout=subprocess.DEVNULL)
 
 
@@ -561,17 +562,16 @@ def generate_stats(summary_df, resultdir):
     logger.info("Calculation of Errors finished.")
 
 
-def convert_For_ALPS(summary_csv):
+def convert_For_ALPS(summary_csv, kmer_ALPS, contigs_ALPS, quality_cutoff_ALPS, create_stats_results):
     logger.info("Converting to ALPS started.")
-
-    #TODO: Argument for ALPS assembly
-    #TODO: Argument for turning summary pictures on / off 
-
     resultdir = summary_csv.rpartition('/')[0] + '/ALPS_Assembly/'
     try:
         os.makedirs(resultdir)
     except FileExistsError:
         pass
+    
     summary_df = process_summaryfile(summary_csv)
-    process_ALPS(summary_df, resultdir)
-    generate_stats(summary_df, resultdir)
+    process_ALPS(summary_df, resultdir, kmer_ALPS, contigs_ALPS, quality_cutoff_ALPS)
+    logger.info("Assembly with ALPS finished.")
+    if create_stats_results == True:
+        generate_stats(summary_df, resultdir)
