@@ -1,5 +1,6 @@
 # -*- coding: future_fstrings -*-
 
+from json import tool
 import numpy as np
 import os
 import pandas as pd
@@ -8,7 +9,7 @@ import matplotlib
 matplotlib.use('pdf')
 from matplotlib import pyplot as plt
 from sklearn import metrics
-import tikzplotlib
+#import tikzplotlib
 from fast_diff_match_patch import diff
 import logging
 
@@ -70,7 +71,6 @@ def process_ALPS(summary_df, resultdir, kmer_ALPS, contigs_ALPS, quality_cutoff_
 
         # will drop empty Peptides
 
-
         alps_df.dropna(subset=[i + " Peptide"], inplace=True)
         alps_df.to_csv(resultdir + i + '_totalscore.csv', index=False)
         subprocess.run(('java', '-jar', 'resources/ALPS.jar', resultdir + i + '_totalscore.csv', str(kmer_ALPS), str(contigs_ALPS), '>>',
@@ -86,7 +86,8 @@ def process_ALPS(summary_df, resultdir, kmer_ALPS, contigs_ALPS, quality_cutoff_
 
 
 def generate_stats(summary_df, resultdir):
-    """compare stats like precision-recall and ... for all tools
+    """
+    Generate stats (AA-Recall, AA-Precision, Peptide Recall) based on database search for all tools
             :param
                 summary_df: dataframe of different tools with score, peptide and aascore
                 resultdir: path to result directory
@@ -101,9 +102,22 @@ def generate_stats(summary_df, resultdir):
     logger.info(r"The Database Report File has classified " + str(
         len(summary_df.index)) + " spectras as confident (FDR < 1%).")
 
-    with open(resultdir + "stats_summary.txt", "w") as text_file:
-        text_file.write("### STATS ###")
+    #with open(resultdir + "stats_summary.txt", "w") as text_file:
+    #    text_file.write("### STATS ###")
 
+    
+    # TODO: https://pyteomics.readthedocs.io/en/latest/examples/example_annotation.html
+    # use mgf read
+    # Compute stats for high noise
+    # FIRST get median noise value for all spectra
+    # number of missing fragment ions
+    # and so on
+
+
+
+    ## TODO Step 1
+    # Calculate Peptide recall 
+    
     AUC = []
     tools_stats = []
     for tools in tools_list:
@@ -115,6 +129,7 @@ def generate_stats(summary_df, resultdir):
         tool_scorecutoff = []
         # get recall-precision relationship by adjusting threshold for tools score
         score_cutoff = 100
+        # TODO: Write 
         while (score_cutoff > -1):
             true_list = summary_df['Modified Sequence'].tolist()
             to_test = summary_df[tools + ' Peptide'].tolist()
@@ -125,7 +140,6 @@ def generate_stats(summary_df, resultdir):
             number_peptides = 0
             sum_peptidematch = 0
             sum_AAmatches = 0
-            sum_LCS = 0
 
             for i, (pred_peptide, true_peptide) in enumerate(zip(to_test, true_list)):
                 length_of_realAA += len(true_peptide)
@@ -135,40 +149,55 @@ def generate_stats(summary_df, resultdir):
                     predicted_AA_id = [vocab[x] for x in pred_peptide]
                     target_AA_id = [vocab[x] for x in true_peptide]
                     recall_AA = _match_AA_novor(target_AA_id, predicted_AA_id)
-                    longest_substring = lcs(true_peptide, pred_peptide)
                     sum_AAmatches += recall_AA
-                    sum_LCS += longest_substring
                     if recall_AA == len(true_peptide):
                         sum_peptidematch += 1
                 else:
                     sum_AAmatches += 0
-                    sum_LCS += 0
             if length_of_predictedAA != 0:
                 tool_accuracy.append(str(sum_peptidematch * 100 / number_peptides))
                 tool_AAprecision.append(str(sum_AAmatches * 100 / length_of_predictedAA))
                 tool_AArecall.append(str(sum_AAmatches * 100 / length_of_realAA))
                 tool_scorecutoff.append(score_cutoff)
-                tool_LCS.append(str(sum_LCS * 100 / length_of_realAA))
             score_cutoff = score_cutoff - 5
         with open(resultdir + "stats_summary.txt", "a+") as text_file:
             text_file.write("\n\nScore Cutoff Results for " + str(tools))
             text_file.write("\nPeptide Accuracy in %: " + str(tool_accuracy))
             text_file.write("\nAA Precision in %: " + str(tool_AAprecision))
             text_file.write("\nAA Recall in %: " + str(tool_AArecall))
-            text_file.write("\nAA LCS Recall in %: " + str(tool_LCS))
             text_file.write("\n--------------------")
         tool_AAprecision = [float(i) for i in tool_AAprecision]
         tool_AArecall = [float(i) for i in tool_AArecall]
         tool_accuracy = [float(i) for i in tool_accuracy]
         tool_scorecutoff = [int(i) for i in tool_scorecutoff]
-        tool_LCS = [float(i) for i in tool_LCS]
         tool_scorecutoff.reverse()
         #AUC.append(metrics.auc([0] + tool_AArecall, [100] + tool_accuracy) / 10000)
+        #print(tools)
+        #print(tool_AArecall)
+        #print(tool_accuracy)
+        #print(tool_AAprecision)
         AUC.append(metrics.auc(tool_AArecall, tool_accuracy) / 10000)
         tool_falsepositiverate = [100 - float(i) for i in tool_AAprecision]
         tools_stats.append(
             (tool_AAprecision, tool_AArecall, tool_falsepositiverate, tool_accuracy, tool_scorecutoff, tool_LCS))
 
+    # put in CSV 01 
+    # TODO: Look up dataframe to CSV
+    # Tool Confidence Score  Value
+
+    # TOTAL AA RECALL
+
+    # TOTAL AA PRECISION
+
+    # AUC
+
+
+    # TOTAL PEPTIDE RECALL
+    # Tool DatasetName Value
+
+
+
+    '''   
     ###
     ### Recall Precision Curve
     ###
@@ -327,8 +356,10 @@ def generate_stats(summary_df, resultdir):
     plt.tight_layout()
     plt.savefig(resultdir + "aminoacid_precision_histogram.jpg", dpi=1200)
     tikzplotlib.save(resultdir + "aminoacid_precision_histogram.tex")
-    plt.close()
+    plt.close()'''
 
+
+    ## LENGTH CUTOFF
 
     AUC = []
     tools_stats = []
@@ -424,6 +455,8 @@ def generate_stats(summary_df, resultdir):
     #################################################################################################
     #                                         Error stats                                            #
     #################################################################################################
+
+    # TODO: Error stats for High-Quality (low noise) spectra ...
 
     logger.info("Start calculating error statistics.")
     for tools in tools_list:
@@ -571,7 +604,7 @@ def convert_For_ALPS(summary_csv, kmer_ALPS, contigs_ALPS, quality_cutoff_ALPS, 
         pass
     
     summary_df = process_summaryfile(summary_csv)
-    process_ALPS(summary_df, resultdir, kmer_ALPS, contigs_ALPS, quality_cutoff_ALPS)
+    #process_ALPS(summary_df, resultdir, kmer_ALPS, contigs_ALPS, quality_cutoff_ALPS)
     logger.info("Assembly with ALPS finished.")
     if create_stats_results == True:
         generate_stats(summary_df, resultdir)

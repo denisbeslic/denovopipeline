@@ -115,7 +115,7 @@ def process_smsnet(smsnet_path):
         with open(smsnet_path) as f, open(
                 smsnet_path + '_prob') as g:  # change _rescore and _prob to switch between rescoring and real
             smsnet_peptide = pd.Series([line.rstrip() for line in f])
-            peptide_list = [x.replace(" ", "").replace("I", "L") for x in
+            peptide_list = [x.replace(" ", "").replace("I", "L").replace("<s>","").replace("<unk>","") for x in
                             smsnet_peptide]
             smsnet_peptide = pd.DataFrame(peptide_list)
             aa_score = g.readlines()
@@ -143,19 +143,10 @@ def process_smsnet(smsnet_path):
 
             # remove peptide predictions which look like "<s><s><ink>SSSSLASSS"
 
-            smsnet_df['SMSNet aaScore'] = [str(i).replace(' ', '').replace(',', ' ').replace('[', '').replace(']', '')
+            smsnet_df['SMSNet aaScore'] = [str(i).replace(' ', '').replace(',', ' '
+                                            ).replace('[', '').replace(']', '')
                                            for i in
                                            smsnet_aascore]
-            smsnet_peptide = smsnet_df['SMSNet Peptide'].tolist()
-            for i, pep in enumerate(smsnet_peptide):
-                if not type(pep) == float:
-                    if ">" in pep:
-                        smsnet_peptide[i] = np.nan
-
-            # in case you chose the phosphorylation model for de novo mode
-
-            """smsnet_df['SMSNet Peptide'] = [
-                str(i).replace('t', 'T').replace('s', 'S').replace('y', 'Y') for i in smsnet_peptide]"""
             return smsnet_df
     except IOError:
         logger.error(f"SMSNet results not accessible. Make sure they are placed in {smsnet_path}")
@@ -354,7 +345,9 @@ def process_peptideshaker(dbreport_path):
                 "C<cmm>", "C").replace("M<ox>", "m").replace("pyro-", "")).replace("N<deam>", "n").replace("Q<deam>",
                                                                                                            "q") for i in
                                                 db_peptide]
-            dbreport_df = dbreport_df[['Index', 'Modified Sequence', 'Validation', 'Spectrum Title', 'Confidence [%]']]
+                            
+            #print(dbreport_df.columns)
+            dbreport_df = dbreport_df[['Index', 'Modified Sequence', 'Validation', 'Spectrum Title']]
             dbreport_df = dbreport_df.set_index('Index').sort_index()
             return dbreport_df
     except IOError:
@@ -412,7 +405,6 @@ def denovo_summary(mgf_in, resultdir, dbreport):
         # Concat the de novo summary with the PeptideShaker Report
         summary_df = pd.concat([summary_df, dbreport_df], axis=1)
         summary_df.index.name = "Index"
-        print(summary_df)
         summary_df.to_csv(resultdir + 'summary.csv', index=True)
         logger.info("Export of summary.csv successful!")
     except IOError:

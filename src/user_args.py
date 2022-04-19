@@ -67,7 +67,6 @@ def setup(test_argv=None):
     convertForALPS_parser.add_argument('-q', '--quality-cutoff', help='Threshold of Quality Cutoff. All Peptides below this score will not be used for assembly.', default=50)
     convertForALPS_parser.add_argument('-s', '--create-stats', help='Option to export Stats about Recall and Precision using the results from database search', default=True)
 
-
     args = parser.parse_args()
     if args.subparser_name == 'setup':
         logger.info("Setup started")
