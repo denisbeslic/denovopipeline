@@ -1,6 +1,6 @@
 # Denovopipeline
 
-Denovopipeline uses multiple de novo sequencing algorithms ([pNovo3](http://pfind.ict.ac.cn/software/pNovo/index.html), [SMSNet](https://github.com/cmb-chula/SMSNet/tree/master#readme), [Novor](https://github.com/compomics/denovogui), [DeepNovo](https://github.com/nh2tran/DeepNovo), [PointNovo](https://github.com/volpato30/PointNovo), [PepNovo+](https://pubmed.ncbi.nlm.nih.gov/15858974/)) for identification and assembly of peptide sequences by tandem mass spectrometry.
+Denovopipeline uses multiple de novo sequencing algorithms ([pNovo3](http://pfind.ict.ac.cn/software/pNovo/index.html), [SMSNet](https://github.com/cmb-chula/SMSNet/tree/master#readme), [Novor](https://github.com/compomics/denovogui), [DeepNovo](https://github.com/nh2tran/DeepNovo), and [PointNovo](https://github.com/volpato30/PointNovo) for identification and assembly of peptide sequences by tandem mass spectrometry.
 
 ## How to use
 
@@ -59,24 +59,22 @@ It is very important that your files use the same formatting. Otherwise, the de 
 
 ### Build Conda Environments
 
-Because DeepNovo and SMSNet have different requirements regarding their Python version and other dependencies, we recommend
-using conda to build virtual environments.
-
-See https://docs.anaconda.com/anaconda/install/ for installation instructions.
-
-After installation create environments and install the dependencis using: 
-
+Since DeepNovo, SMSNet and Python have different requirements regarding their Python version and other dependencies, we recommend
+using [conda](https://docs.anaconda.com/anaconda/install/) to build virtual environments.
 ```
 conda env create -n deepnovo -f envs/requirements_deepnovo.yml
 conda env create -n smsnet -f envs/requirements_smsnet.yml
 conda env create -n pointnovo -f envs/requirements_pointnovo.yml
+conda env create -n denovopipeline -f envs/requirements_denovopipeline.yml
 ```
 
 ### Run de novo sequencing tools
 
 Novor will be executed by using DeNovoCLI from DeNovoGUI. It is necessary to provide a parameter file. We recommend using the [instructions from DeNovoCLI](https://github.com/compomics/denovogui/wiki/IdentificationParametersCLI).
 
-PointNovo, SMSNet and DeepNovo need to be run separately, because they use different dependencies. We provide some pre-trained models, but it is recommended to train models yourself. You can change the model each DeepLearning Tool is using by using the command line arguments `--smsnet_model`, `--deepnovo_model` and `--pointnovo_model`
+DeepNovo, SMSNet and PointNovo need to be run separately, because they use different dependencies. We provide some pre-trained models, but it is recommended to train models yourself. You can change the model each DeepLearning Tool is using by the command line arguments `--smsnet_model`, `--deepnovo_model` and `--pointnovo_model`
+
+Important: PointNovo and DeepNovo require the *_reformatted_deepnovo.mgf, while SMSNet uses the *reformatted.mgf as input for the prediction. 
 
 pNovo3 can only run on Windows and does not work within the pipeline. You can run it separately by following the [instructions on its website](http://pfind.ict.ac.cn/software/pNovo/index.html) and put its final output in the results directory.
 
@@ -100,6 +98,7 @@ After having used all desired utilized all denovo tools, use `denovo_summary` to
 You need to specify the directory where all the de novo results are stored and provide your initial reformatted mgf file to correctly assign the predictions to each spectrum. Additionally, you can specify a feature file from Peptide Shaker to compare your de novo sequencing results with Database results. We recommend using DeNovoGUI and PeptideShaker and exporting the "Default PSM Report with non-validated matches".
 
 ``` 
+conda activate denovopipeline
 python src/main.py summary --input example_dataset/YOURDATA_reformatted.mgf --results example_dataset/results/ --db example_dataset/results/Default\ PSM\ Report\ with\ non-validated\ matches.txt
 ```
 
@@ -111,10 +110,8 @@ The summary file will be generated in your results directory and include Spectru
 To finally assembly the sequence, use convertForALPS
 
 ```
+conda activate denovopipeline
 python src/main.py convertForALPS --input example_dataset/results/summary.csv
 ```
-The command will split up the summary file and generate contigs for each tool in results/ALPS_Assembly.
-It will also create several figures and stats if desired. 
-
-
+The command will split up the summary file and generate contigs for each tool in results/ALPS_Assembly. Additionally, it will also generate CSVs with information about the Peptide Recall, AA Recall, AA Precision 
 
