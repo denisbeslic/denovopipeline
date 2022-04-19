@@ -61,8 +61,8 @@ def run_smsnet(mgf_in, dir_out, smsnet_model):
         os.makedirs(f"{dir_out}")
     model = os.path.abspath(smsnet_model)
     os.chdir("resources/SMSNet")
-    run_shell_command(f"python run.py --model_dir {model} --inference_input_file {mgf_in} --inference_output_file {dir_out}")
-    #os.system(f"python run.py --model_dir {model} --inference_input_file {mgf_in} --inference_output_file {dir_out}")
+    #run_shell_command(f"python run.py --model_dir {model} --inference_input_file {mgf_in} --inference_output_file {dir_out}")
+    os.system(f"python run.py --model_dir {model} --inference_input_file {mgf_in} --inference_output_file {dir_out}")
     os.chdir(cwd)
     smsnet_time = time() - start_time1
     minute = int(smsnet_time // 60)
