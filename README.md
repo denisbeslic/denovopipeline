@@ -64,22 +64,12 @@ using conda to build virtual environments.
 
 See https://docs.anaconda.com/anaconda/install/ for installation instructions.
 
-After installation create environments for DeepNovo and SMSNet by:
+After installation create environments and install the dependencis using: 
 
 ```
-conda create -n deepnovo python=2.7
-conda create -n smsnet python=3.5.2 --channel conda-forge
-conda create -n pointnovo python=3.6
-```
-Use the requirements.txt in the main folder to install all dependencies.
-
-```
-conda activate deepnovo
-pip install -r requirements_deepnovo.txt
-conda activate smsnet
-pip install -r requirements_smsnet.txt
-conda activate pointnovo
-pip install -r requirements_pointnovo.txt
+conda env create -n deepnovo -f envs/requirements_deepnovo.yml
+conda env create -n smsnet -f envs/requirements_smsnet.yml
+conda env create -n pointnovo -f envs/requirements_pointnovo.yml
 ```
 
 ### Run de novo sequencing tools
