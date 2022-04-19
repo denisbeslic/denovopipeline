@@ -1,0 +1,50 @@
+name: denovopipeline
+channels:
+  - defaults
+  - conda-forge
+  - bioconda
+dependencies:
+  - _libgcc_mutex=0.1=main
+  - _openmp_mutex=4.5=1_gnu
+  - ca-certificates=2022.3.29=h06a4308_0
+  - certifi=2021.10.8=py39h06a4308_2
+  - java-jdk=7.0.91=1
+  - ld_impl_linux-64=2.35.1=h7274673_9
+  - libffi=3.3=he6710b0_2
+  - libgcc-ng=9.3.0=h5101ec6_17
+  - libgomp=9.3.0=h5101ec6_17
+  - libstdcxx-ng=9.3.0=hd4cf53a_17
+  - ncurses=6.3=h7f8727e_2
+  - openssl=1.1.1n=h7f8727e_0
+  - pip=21.2.4=py39h06a4308_0
+  - python=3.9.12=h12debd9_0
+  - readline=8.1.2=h7f8727e_1
+  - setuptools=61.2.0=py39h06a4308_0
+  - sqlite=3.38.2=hc218d9a_0
+  - tk=8.6.11=h1ccaba5_0
+  - tzdata=2022a=hda174b7_0
+  - wheel=0.37.1=pyhd3eb1b0_0
+  - xz=5.2.5=h7b6447c_0
+  - zlib=1.2.12=h7f8727e_1
+  - pip:
+    - cycler==0.11.0
+    - fast-diff-match-patch==2.0.0.post1
+    - fonttools==4.32.0
+    - future-fstrings==1.2.0
+    - joblib==1.1.0
+    - kiwisolver==1.4.2
+    - matplotlib==3.5.1
+    - numpy==1.22.3
+    - packaging==21.3
+    - pandas==1.4.2
+    - pillow==9.1.0
+    - pyparsing==3.0.8
+    - pyteomics==4.5.3
+    - python-dateutil==2.8.2
+    - pytz==2022.1
+    - scikit-learn==1.0.2
+    - scipy==1.8.0
+    - six==1.16.0
+    - sklearn==0.0
+    - threadpoolctl==3.1.0
+prefix: /scratch/beslicd/.conda/envs/denovopipeline
