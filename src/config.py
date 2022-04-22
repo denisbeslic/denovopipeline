@@ -2,6 +2,8 @@ import numpy as np
 from pyteomics import mgf, mass
 from collections import OrderedDict
 
+mass_tol = 0.5 # in Da
+
 tools_list = [
     "Novor",
     "pNovo",

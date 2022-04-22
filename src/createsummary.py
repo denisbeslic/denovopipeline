@@ -10,21 +10,22 @@ import os
 
 from pyteomics import mgf, mass, parser
 from pyteomics import pylab_aux as pa, usi
-from config import vocab_reverse_nomods, readmgf
+from config import vocab_reverse_nomods, readmgf, mass_AA, mass_tol
+
 
 logger = logging.getLogger(__name__)
 
-def fragments(peptide, types=('b', 'y'), maxcharge=1):
+def fragments(peptide, types=('b', 'y')):
     """
-    The function generates all possible m/z for fragments of types.
+    The function generates possible m/z for fragments of 8 ion types
+    b, b2+, b-NH3, b-H2O, y, y2+, y-NH3, y-H2O
+        :param
+            peptide: peptide sequence as string
+            types: types of fragment ions f.e. (b,y) or (a,x)
+        :return
+            b_ions: list of list of b_ions
+            y_ions: list of list of y_ions
     """
-
-    aa_mass = mass.std_aa_mass.copy()
-    aa_mass['n'] = 115.02695
-    aa_mass['m'] = 147.0354
-    aa_mass['q'] = 129.0426
-    # TODO: Import mass_AA from config instead of defition here
-    # TODO: Add more comments
 
     b_ions = []
     y_ions = []
@@ -35,31 +36,31 @@ def fragments(peptide, types=('b', 'y'), maxcharge=1):
                 b_ion_types = []
                 # b
                 b_ion_types.append(mass.fast_mass(
-                        peptide[:i], ion_type=ion_type, charge=1, aa_mass=aa_mass))
+                        peptide[:i], ion_type=ion_type, charge=1, aa_mass=mass_AA))
                 # b(2+)
                 b_ion_types.append(mass.fast_mass(
-                        peptide[:i], ion_type=ion_type, charge=2, aa_mass=aa_mass))
+                        peptide[:i], ion_type=ion_type, charge=2, aa_mass=mass_AA))
                 # b-H2O
                 b_ion_types.append(mass.fast_mass(
-                        peptide[:i], ion_type=ion_type, charge=1, aa_mass=aa_mass) - mass.calculate_mass(formula='H2O', charge=1))
+                        peptide[:i], ion_type=ion_type, charge=1, aa_mass=mass_AA) - mass.calculate_mass(formula='H2O', charge=1))
                 # b-NH3
                 b_ion_types.append(mass.fast_mass(
-                        peptide[:i], ion_type=ion_type, charge=1, aa_mass=aa_mass) - mass.calculate_mass(formula='NH3', charge=1))
+                        peptide[:i], ion_type=ion_type, charge=1, aa_mass=mass_AA) - mass.calculate_mass(formula='NH3', charge=1))
                 b_ions.append(b_ion_types)
             else:
                 y_ion_types = []
                 # y
                 y_ion_types.append(mass.fast_mass(
-                        peptide[i:], ion_type=ion_type, charge=1, aa_mass=aa_mass))
+                        peptide[i:], ion_type=ion_type, charge=1, aa_mass=mass_AA))
                 # y(2+)
                 y_ion_types.append(mass.fast_mass(
-                        peptide[i:], ion_type=ion_type, charge=2, aa_mass=aa_mass))
+                        peptide[i:], ion_type=ion_type, charge=2, aa_mass=mass_AA))
                 # y-H2O
                 y_ion_types.append(mass.fast_mass(
-                        peptide[i:], ion_type=ion_type, charge=1, aa_mass=aa_mass) - mass.calculate_mass(formula='H2O', charge=1)) # if its double charged is it only half the mass
+                        peptide[i:], ion_type=ion_type, charge=1, aa_mass=mass_AA) - mass.calculate_mass(formula='H2O', charge=1)) # if its double charged is it only half the mass
                 # y-NH3
                 y_ion_types.append(mass.fast_mass(
-                        peptide[i:], ion_type=ion_type, charge=1, aa_mass=aa_mass) - mass.calculate_mass(formula='NH3', charge=1))
+                        peptide[i:], ion_type=ion_type, charge=1, aa_mass=mass_AA) - mass.calculate_mass(formula='NH3', charge=1))
                 y_ions.append(y_ion_types)
     return b_ions, y_ions
 
@@ -81,12 +82,11 @@ def lcs(s1, s2):
 
 def noise_and_fragmentIons(df, mgf_in_path):
     """Add and calculates fragment ions from a summary df
-
         :param
             df: summary_df
             mgf: mgf input file
         :return
-            df: summary_df with additional missing cleavages ions column
+            df: summary_df with additional columns 'Number of missing cleavages' and 'Median noise intensity'
             median_noise: The median noise value for all spectra in this dataset
     """  
     with mgf.read(mgf_in_path) as spectra:
@@ -97,11 +97,9 @@ def noise_and_fragmentIons(df, mgf_in_path):
         missing_cleavages = []
         cleavages_positions = []
         noise_intensities = []
-        mass_tol = 0.5 # mass tolerance for peaks to be regarded as equal 
         for spectrum, peptide in zip(spectra, df["Modified Sequence"]):
             if type(peptide) != float:
-                charge = spectrum['params']['charge'][0]
-                b_ions, y_ions = fragments(peptide, maxcharge=charge)
+                b_ions, y_ions = fragments(peptide)
                 missing_cleavage = 0
                 cleavage_position = []
                 for pos, (b_ion, y_ion) in enumerate(zip(b_ions, reversed(y_ions))):
@@ -142,7 +140,7 @@ def noise_factor(df, mgf_in_path, median_noise):
             df: summary_df
             mgf: mgf input file
         :return
-            df: dataframe with additional noise factor column
+            df: dataframe with additional columns 'Noise factor', 'Number of noise peaks', 'Number of fragment peaks'
     """
     noise_factor_list = [] 
     noise_total_amount = []
@@ -151,15 +149,12 @@ def noise_factor(df, mgf_in_path, median_noise):
     with mgf.read(mgf_in_path) as spectra:
         if len(spectra) != len(df):
             logger.error("The mgf file and summary file have different numbers of spectra. Check if you choose the correct corresponding files")
-            return df
-        #TODO Define mass_tol as global or put in config file
-        mass_tol = 0.5 # mass tolerance for peaks to be regarded as equal 
+            return df 
         for spectrum, peptide in zip(spectra, df["Modified Sequence"]):
             if type(peptide) != float:
-                charge = spectrum['params']['charge'][0]
                 amount_noise_peaks = 0
                 amount_fragment_peaks = 0
-                b_ions, y_ions = fragments(peptide, maxcharge=charge)
+                b_ions, y_ions = fragments(peptide)
                 spectrum_intensity = spectrum['intensity array'] 
                 for pos, (b_ion, y_ion) in enumerate(zip(b_ions, reversed(y_ions))):
                     b = [np.nonzero(np.isclose(spectrum['m/z array'], i, atol=mass_tol)) for i in b_ion if np.isclose(spectrum['m/z array'], i, atol=mass_tol).any()]
@@ -177,7 +172,10 @@ def noise_factor(df, mgf_in_path, median_noise):
 
                 noise_total_amount.append(amount_noise_peaks)
                 fragments_total_amount.append(amount_fragment_peaks)
-                noise_val = amount_noise_peaks/amount_fragment_peaks
+                if amount_fragment_peaks > 0:
+                    noise_val = amount_noise_peaks/amount_fragment_peaks
+                else:
+                    noise_val = amount_noise_peaks/1
                 noise_factor_list.append(noise_val)
             else:
                 noise_factor_list.append(np.nan)
@@ -186,7 +184,7 @@ def noise_factor(df, mgf_in_path, median_noise):
         df["Noise factor"] = noise_factor_list
         df["Number of noise peaks"] = noise_total_amount
         df["Number of fragment peaks"] = fragments_total_amount
-        
+
         total_peaks = np.nansum(noise_total_amount) + np.nansum(fragments_total_amount)
         noise_percent = np.nansum(noise_total_amount) / total_peaks
         logger.info(f"{noise_percent*100}% of all peaks are noise")
@@ -511,8 +509,6 @@ def process_peptideshaker(dbreport_path):
                 "C<cmm>", "C").replace("M<ox>", "m").replace("pyro-", "")).replace("N<deam>", "n").replace("Q<deam>",
                                                                                                            "q") for i in
                                                 db_peptide]
-                            
-            #print(dbreport_df.columns)
             dbreport_df = dbreport_df[['Index', 'Modified Sequence', 'Validation', 'Spectrum Title']]
             dbreport_df = dbreport_df.set_index('Index').sort_index()
             return dbreport_df
