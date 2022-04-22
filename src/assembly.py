@@ -242,9 +242,6 @@ def generate_stats(summary_df, resultdir):
     df_PRcurve.to_csv(resultdir+"PRcurve.csv", index=False)
 
 
-    # TODO: Two loops to compute AA Recall and Peptide Recall using two predictions
-    # Pick prediction with higher AA match
-
     total_peptide_recall = []
     total_AA_recall = []
     total_AA_precision = []
@@ -252,6 +249,7 @@ def generate_stats(summary_df, resultdir):
     df_AA_recall_combined = pd.DataFrame(tools_list)
     df_peptide_recall_combined = pd.DataFrame(tools_list)
 
+    # Loop for evaluation of two tools
     for tool_one in tools_list:
         for tool_two in tools_list:
             logger.info(f"Calculating stats between {tool_one} and {tool_two}")
@@ -319,7 +317,12 @@ def generate_stats(summary_df, resultdir):
 
     #TODO: Compute 
     # PRINT number of spectra with at least one missing cleavage
-    # PRINT % of peaks which are noise
+
+    # TODO: Get % of spectra with at least one missing cleavage site
+
+    # Get Recall vs Number of Cleavage Sites missing
+
+    # Get Recall vs Noise Factor
 
 
 

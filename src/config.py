@@ -10,12 +10,6 @@ tools_list = [
     "PointNovo",
 ]
 
-figure_colors = ['#488f31', '#8aac49', '#c6c96a', '#ffe792', '#f8b267', '#eb7a52', '#de425b', '#ffa600', '#488f31',
-                 '#8aac49', '#c6c96a', '#ffe792', '#f8b267', '#eb7a52', '#de425b',
-                 '#ffa600']
-
-
-
 _PAD = "_PAD"
 _GO = "_GO"
 _EOS = "_EOS"
@@ -165,8 +159,6 @@ def _match_AA_novor(target, predicted):
 
 DIMENSION = 90000
 BIN_SIZE = 0.1
-
-
 
 def parse_spectra(sps):
     db = []
