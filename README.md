@@ -114,4 +114,3 @@ conda activate denovopipeline
 python src/main.py convertForALPS --input example_dataset/results/summary.csv
 ```
 The command will split up the summary file and generate contigs for each tool in results/ALPS_Assembly. Additionally, it will also generate CSVs with information about the Peptide Recall, AA Recall, AA Precision 
-
