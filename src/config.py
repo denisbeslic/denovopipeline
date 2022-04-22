@@ -30,7 +30,6 @@ vocab_reverse = ['A',
                  'n',
                  'D',
                  'C',
-                 # 'C(Carbamidomethylation)',
                  'E',
                  'Q',
                  'q',
@@ -44,12 +43,9 @@ vocab_reverse = ['A',
                  'F',
                  'P',
                  'S',
-                 # 'S(Phosphorylation)',
                  'T',
-                 # 'T(Phosphorylation)',
                  'W',
                  'Y',
-                 # 'Y(Phosphorylation)',
                  'V',
                  ]
 
@@ -71,14 +67,6 @@ vocab_reverse_nomods = ['a',
                         'y',
                         'v',
                         ]
-
-'''novor_config_mod_dict = OrderedDict([('M(0)', 'm'), ('Q(2)', 'q'), ('N(1)', 'n'), (' ', ''), ('C(3)', 'C')])
-pepnovo_config_mod_dict = OrderedDict()
-smsnet_config_mod_dict = OrderedDict()
-deepnovo_config_mod_dict = OrderedDict()
-pointnovo_config_mod_dict = OrderedDict()
-pnovo_config_mod_dict = OrderedDict()
-peptideshaker_congif_mod_dict = OrderedDict()'''
 
 vocab_reverse = _START_VOCAB + vocab_reverse
 vocab = dict([(x, y) for (y, x) in enumerate(vocab_reverse)])
@@ -102,8 +90,6 @@ mass_AA = {'_PAD': 0.0,
            'n': 115.02695,
            'D': 115.02694,  # 3
            'C': 160.03065,  # 103.00919,  # 4
-           # 'C(Carbamidomethylation)': 160.03065,  # C(+57.02)
-           # ~ 'C(Carbamidomethylation)': 161.01919, # C(+58.01) # orbi
            'E': 129.04259,  # 5
            'Q': 128.05858,  # 6
            'q': 129.0426,
@@ -117,12 +103,9 @@ mass_AA = {'_PAD': 0.0,
            'F': 147.06841,  # 13
            'P': 97.05276,  # 14
            'S': 87.03203,  # 15
-           # 'S(Phosphorylation)': 87.03203 + mass_Phosphorylation,
            'T': 101.04768,  # 16
-           # 'T(Phosphorylation)': 101.04768 + mass_Phosphorylation,
            'W': 186.07931,  # 17
            'Y': 163.06333,  # 18
-           # 'Y(Phosphorylation)': 163.06333 + mass_Phosphorylation,
            'V': 99.06841,  # 19
            }
 
@@ -156,9 +139,6 @@ def arePermutation(str1, str2):
 # Function from DeepNovo to calculate correct match between two sequences
 def _match_AA_novor(target, predicted):
     """TODO(nh2tran): docstring."""
-
-    # ~ print("".join(["="] * 80)) # section-separating line
-    # ~ print("WorkerTest._test_AA_match_novor()")
     num_match = 0
     target_len = len(target)
     predicted_len = len(predicted)
@@ -183,86 +163,9 @@ def _match_AA_novor(target, predicted):
 
     return num_match
 
-
-def norm(x): return np.linalg.norm(x)
-
-
-def cosine(u, v): return np.dot(u, v) / max(norm(u) * norm(v), 1e-16)
-
-
-def dotproduct(u, v): return np.dot(u, v)
-
-
-def pearson(u, v): return np.dot(np.mean(u), np.mean(v)) / max(norm(u) * norm(v), 1e-16)
-
-
-def dotbias(u, v): return (np.sqrt(np.dot(u ** 2, v ** 2) / max(norm(u) * norm(v), 1e-16))) / (max(cosine(u, v), 1e-16))
-
-
-def dotbias_dotproduct(u, v): return (np.sqrt(np.dot(u ** 2, v ** 2))) / (max(dotproduct(u, v), 1e-16))
-
-
-def similarity_scoring(u, v): return cosine(u, v) * (1 - dotbias(u, v))
-
-
-def similarity_scoring_dot(u, v): return dotproduct(u, v) * (1 - dotbias_dotproduct(u, v))
-
-
 DIMENSION = 90000
 BIN_SIZE = 0.1
 
-
-def spectrum2vector(mz_list, itensity_list, mass, bin_size, charge):
-    itensity_list = itensity_list / np.max(itensity_list)
-
-    vector = np.zeros(DIMENSION, dtype='float32')
-
-    mz_list = np.asarray(mz_list)
-
-    indexes = mz_list / bin_size
-    indexes = np.around(indexes).astype('int32')
-
-    for i, index in enumerate(indexes):
-        vector[index] += itensity_list[i]
-
-    # normalize
-    vector = np.sqrt(vector)
-
-    # remove precursors, including isotropic peaks
-    for delta in (0, 1, 2):
-        precursor_mz = mass + delta / charge
-        if precursor_mz > 0 and precursor_mz < 2000:
-            vector[round(precursor_mz / bin_size)] = 0
-
-    return vector
-
-
-def spectrum2vectorWeighted(mz_list, itensity_list, mass, bin_size, charge):
-    a = 1
-    b = 1
-    itensity_list = itensity_list / np.max(itensity_list)
-
-    vector = np.zeros(DIMENSION, dtype='float32')
-
-    mz_list = np.asarray(mz_list)
-    indexes = mz_list / bin_size
-    indexes = np.around(indexes).astype('int32')
-    # print(itensity_list[1:10], mz_list[1:10], indexes[1:10])
-
-    for i, index in enumerate(indexes):
-        # vector[index] += itensity_list[i]*mz_list[i]
-        vector[index] += (itensity_list[i] ** a) * (mz_list[i] ** b)
-
-    # normalize
-    vector = np.sqrt(vector)
-
-    # remove precursors, including isotropic peaks
-    for delta in (0, 1, 2):
-        precursor_mz = mass + delta / charge
-        if precursor_mz > 0 and precursor_mz < 2000:
-            vector[round(precursor_mz / bin_size)] = 0
-
-    return vector
 
 
 def parse_spectra(sps):

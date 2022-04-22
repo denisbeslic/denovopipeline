@@ -1,15 +1,67 @@
 # -*- coding: future_fstrings -*-
 
+from turtle import color
 import numpy as np
 import pandas as pd
 import statistics
 import math
 import logging
+import os
 
-from config import vocab_reverse_nomods
+from pyteomics import mgf, mass, parser
+from pyteomics import pylab_aux as pa, usi
+
+from config import vocab_reverse_nomods, readmgf
 
 logger = logging.getLogger(__name__)
 
+def fragments(peptide, types=('b', 'y'), maxcharge=2):
+    """
+    The function generates all possible m/z for fragments of types
+    `types` and of charges from 1 to `maxharge`.
+    """
+
+    aa_mass = mass.std_aa_mass.copy()
+    aa_mass['n'] = 115.02695
+    aa_mass['m'] = 147.0354
+    aa_mass['q'] = 129.0426
+
+    b_ions = []
+    y_ions = []
+
+    for i in range(1, len(peptide)):
+        for ion_type in types:
+            if ion_type[0] in 'abc':
+                b_ion_types = []
+                # b
+                b_ion_types.append(mass.fast_mass(
+                        peptide[:i], ion_type=ion_type, charge=1, aa_mass=aa_mass))
+                # b(2+)
+                b_ion_types.append(mass.fast_mass(
+                        peptide[:i], ion_type=ion_type, charge=2, aa_mass=aa_mass))
+                # b-H2O
+                b_ion_types.append(mass.fast_mass(
+                        peptide[:i], ion_type=ion_type, charge=1, aa_mass=aa_mass) - mass.calculate_mass(formula='H2O', charge=1))
+                # b-NH3
+                b_ion_types.append(mass.fast_mass(
+                        peptide[:i], ion_type=ion_type, charge=1, aa_mass=aa_mass) - mass.calculate_mass(formula='NH3', charge=1))
+                b_ions.append(b_ion_types)
+            else:
+                y_ion_types = []
+                # y
+                y_ion_types.append(mass.fast_mass(
+                        peptide[i:], ion_type=ion_type, charge=1, aa_mass=aa_mass))
+                # y(2+)
+                y_ion_types.append(mass.fast_mass(
+                        peptide[i:], ion_type=ion_type, charge=2, aa_mass=aa_mass))
+                # y-H2O
+                y_ion_types.append(mass.fast_mass(
+                        peptide[i:], ion_type=ion_type, charge=1, aa_mass=aa_mass) - mass.calculate_mass(formula='H2O', charge=1)) # if its double charged is it only half the mass
+                # y-NH3
+                y_ion_types.append(mass.fast_mass(
+                        peptide[i:], ion_type=ion_type, charge=1, aa_mass=aa_mass) - mass.calculate_mass(formula='NH3', charge=1))
+                y_ions.append(y_ion_types)
+    return b_ions, y_ions
 
 def lcs(s1, s2):
     """Length of Longest Common Substring between two strings"""
@@ -26,6 +78,88 @@ def lcs(s1, s2):
     cs = matrix[-1][-1]
     return len(cs)
 
+
+def noise_and_fragmentIons(df, mgf_in_path):
+    """Add and calculates fragment ions from a summary df
+
+        :param
+            df: summary_df
+            mgf: mgf input file
+        :return
+            df: dataframe with additional Cleavage ions column
+    """  
+    with mgf.read(mgf_in_path) as spectra:
+        if len(spectra) != len(df):
+            logger.error("The mgf file and summary file have different numbers of spectra. Check if you choose the correct corresponding files")
+            return df
+
+        missing_cleavages = []
+        cleavages_positions = []
+        noise_intensities = []
+        mass_tol = 0.5 # mass tolerance for peaks to be regarded as equal 
+        for spectrum, peptide in zip(spectra, df["Modified Sequence"]):
+            if type(peptide) != float:
+                charge = spectrum['params']['charge'][0]
+                b_ions, y_ions = fragments(peptide, maxcharge=charge)
+                missing_cleavage = 0
+                cleavage_position = []
+                for pos, (b_ion, y_ion) in enumerate(zip(b_ions, reversed(y_ions))):
+                    b_ions_present = [True for i in b_ion if np.isclose(spectrum['m/z array'], i, atol=mass_tol).any()]
+                    y_ions_present = [True for i in y_ion if np.isclose(spectrum['m/z array'], i, atol=mass_tol).any()]
+                    if b_ions_present or y_ions_present:
+                        cleavage_position.append(pos+1)
+                    else:
+                        missing_cleavage +=1
+                missing_cleavages.append(int(missing_cleavage))
+                cleavages_positions.append(cleavage_position)
+
+                spectrum_intensity = spectrum['intensity array'] 
+                for pos, (b_ion, y_ion) in enumerate(zip(b_ions, reversed(y_ions))):
+                    #print(y_ion)
+                    b = [np.nonzero(np.isclose(spectrum['m/z array'], i, atol=mass_tol)) for i in b_ion if np.isclose(spectrum['m/z array'], i, atol=mass_tol).any()]
+                    y = [np.nonzero(np.isclose(spectrum['m/z array'], i, atol=mass_tol)) for i in y_ion if np.isclose(spectrum['m/z array'], i, atol=mass_tol).any()]
+                    #a = np.nonzero(np.isclose(spectrum['m/z array'], b_ion, atol=mass_tol))
+                    #b = np.nonzero(np.isclose(spectrum['m/z array'], y_ion, atol=mass_tol))
+                    for elem in b:
+                        spectrum_intensity[elem] = np.nan
+                    for elem in y:
+                        spectrum_intensity[elem] = np.nan
+                noise_intensities = noise_intensities + list(spectrum_intensity)
+            else:
+                missing_cleavages.append(np.nan)
+                cleavages_positions.append(np.nan)
+        
+        df["Number of missing cleavages"] = missing_cleavages
+        df["Position of present cleavages"] = cleavages_positions
+        median_noise = np.nanmedian(noise_intensities)
+        median_missing_cleavages = np.nanmedian(missing_cleavages)
+        logger.info(f"Median noise intesity: {median_noise}")
+        logger.info(f"Median number of missing cleavages: {median_missing_cleavages}")
+        return df, median_noise
+
+def noise_factor(df, mgf_in_path, median_noise):
+    """Add and calculates noise factor from a summary df
+
+        :param
+            df: summary_df
+            mgf: mgf input file
+        :return
+            df: dataframe with additional noise factor column
+    """     
+    # Identify PeptidePeaks again
+    # Get Nuber of Peptide Peaks
+    # remove from list
+
+
+    # get number of noise intesities above 
+
+
+    noise_factor_list = []
+
+
+
+    # (#NoisePeaks/ #PeptidePeaks)
+    return df
 
 def process_novor(novor_path):
     """parse de nov results from novor to dataframe
@@ -400,11 +534,18 @@ def denovo_summary(mgf_in, resultdir, dbreport):
         summary_df.insert(1, 'Charge', charge_sp)
 
         # Extended PSM Report of Peptide Shaker
+        if os.path.exists(os.path.join(resultdir, "Extended PSM Report.txt")):
+            dbreport = os.path.join(resultdir, "Extended PSM Report.txt")
         dbreport_df = process_peptideshaker(dbreport)
 
         # Concat the de novo summary with the PeptideShaker Report
         summary_df = pd.concat([summary_df, dbreport_df], axis=1)
         summary_df.index.name = "Index"
+
+        summary_df, median_noise = noise_and_fragmentIons(summary_df, mgf_in_path)
+
+        summary_df = noise_factor(summary_df, mgf_in_path, median_noise)
+
         summary_df.to_csv(resultdir + 'summary.csv', index=True)
         logger.info("Export of summary.csv successful!")
     except IOError:

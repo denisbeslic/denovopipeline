@@ -1,6 +1,7 @@
 # -*- coding: future_fstrings -*-
 
 from json import tool
+import csv
 import numpy as np
 import os
 import pandas as pd
@@ -20,6 +21,30 @@ pd.options.mode.chained_assignment = None
 logger = logging.getLogger(__name__)
 logging.getLogger('matplotlib').setLevel(logging.ERROR)
 
+def precision_recall_with_threshold(peptides_truth, peptides_predicted, peptides_predicted_confidence, threshold):
+    """
+    Calculate precision and recall for the given confidence score threshold
+    Parameters
+    ----------
+    peptides_truth : list 
+        List of confidence scores for correct amino acids predictions
+    peptides_predicted : list
+        List of confidence scores for all amino acids prediction
+    num_original_aa : list
+        Number of amino acids in the predicted peptide sequences
+    threshold : float
+        confidence score threshold
+           
+    Returns
+    -------
+    aa_precision: float
+        Number of correct aa predictions divided by all predicted aa
+    aa_recall: float
+        Number of correct aa predictions divided by all ground truth aa   
+    peptide_recall: float
+        Number of correct peptide preiditions divided by number of ground truth peptides  
+    """  
+    return 0
 
 def process_summaryfile(summary_csv):
     """process summary dataframe for further analysis
@@ -102,39 +127,47 @@ def generate_stats(summary_df, resultdir):
     logger.info(r"The Database Report File has classified " + str(
         len(summary_df.index)) + " spectras as confident (FDR < 1%).")
 
-    #with open(resultdir + "stats_summary.txt", "w") as text_file:
-    #    text_file.write("### STATS ###")
-
     
     # TODO: https://pyteomics.readthedocs.io/en/latest/examples/example_annotation.html
     # use mgf read
     # Compute stats for high noise
     # FIRST get median noise value for all spectra
+    # and also get number of spectra without missing fragment ions (X of X spectras have mising fragment ions)
+    # and amount of noise peaks in contrast to fragment peaks (X OF X (Y.Y%) are noise peaks )
     # number of missing fragment ions
     # and so on
+    # Get Recall and Preicison for each Missing Cleavage Site! and Noise Factor!
+    # Get average recall and precision for data with at least one missing cleavage site!
 
 
 
-    ## TODO Step 1
-    # Calculate Peptide recall 
+
+
     
     AUC = []
     tools_stats = []
+    total_peptide_recall = []
+    total_AA_recall = []
+    total_AA_precision = []
+
+    Confidence_Values = []
+    AA_Recall_Values = []
+    AA_Precision_Values = []
+    Tool_Values = []
+
+    
     for tools in tools_list:
         logger.info(f"Calculating precision-recall for {tools}")
         tool_AArecall = []
         tool_accuracy = []
         tool_AAprecision = []
-        tool_LCS = []
         tool_scorecutoff = []
-        # get recall-precision relationship by adjusting threshold for tools score
-        score_cutoff = 100
-        # TODO: Write 
+        score_cutoff = 100 
         while (score_cutoff > -1):
             true_list = summary_df['Modified Sequence'].tolist()
             to_test = summary_df[tools + ' Peptide'].tolist()
             to_test_score = summary_df[tools + ' Score'].tolist()
-
+            #TODO the following in a function
             length_of_predictedAA = 0
             length_of_realAA = 0
             number_peptides = 0
@@ -160,203 +193,134 @@ def generate_stats(summary_df, resultdir):
                 tool_AArecall.append(str(sum_AAmatches * 100 / length_of_realAA))
                 tool_scorecutoff.append(score_cutoff)
             score_cutoff = score_cutoff - 5
-        with open(resultdir + "stats_summary.txt", "a+") as text_file:
-            text_file.write("\n\nScore Cutoff Results for " + str(tools))
-            text_file.write("\nPeptide Accuracy in %: " + str(tool_accuracy))
-            text_file.write("\nAA Precision in %: " + str(tool_AAprecision))
-            text_file.write("\nAA Recall in %: " + str(tool_AArecall))
-            text_file.write("\n--------------------")
         tool_AAprecision = [float(i) for i in tool_AAprecision]
         tool_AArecall = [float(i) for i in tool_AArecall]
         tool_accuracy = [float(i) for i in tool_accuracy]
         tool_scorecutoff = [int(i) for i in tool_scorecutoff]
         tool_scorecutoff.reverse()
-        #AUC.append(metrics.auc([0] + tool_AArecall, [100] + tool_accuracy) / 10000)
-        #print(tools)
-        #print(tool_AArecall)
-        #print(tool_accuracy)
-        #print(tool_AAprecision)
         AUC.append(metrics.auc(tool_AArecall, tool_accuracy) / 10000)
-        tool_falsepositiverate = [100 - float(i) for i in tool_AAprecision]
-        tools_stats.append(
-            (tool_AAprecision, tool_AArecall, tool_falsepositiverate, tool_accuracy, tool_scorecutoff, tool_LCS))
 
-    # put in CSV 01 
-    # TODO: Look up dataframe to CSV
-    # Tool Confidence Score  Value
+        total_peptide_recall.append(tool_accuracy[-1])
+        total_AA_recall.append(tool_AArecall[-1])
+        total_AA_precision.append(tool_AAprecision[-1])
+
+        AA_Recall_Values.append(tool_AArecall)
+        AA_Precision_Values.append(tool_AAprecision)
+        Confidence_Values.append(tool_scorecutoff)
+        Tool_Values.append([tools]*len(tool_scorecutoff))
+
+        #tools_stats.append(
+        #    (tool_AAprecision, tool_AArecall, tool_accuracy, tool_scorecutoff))
+
+    
+    # TOTAL PEPTIDE RECALL
+    df_total_peptide_recall = pd.DataFrame(list(zip(tools_list, total_peptide_recall)),
+               columns =['Tool', 'Total Peptide Recall'])
+    df_total_peptide_recall.to_csv(resultdir+"TotalPeptideRecall.csv", index=False)
 
     # TOTAL AA RECALL
+    df_total_AA_recall = pd.DataFrame(list(zip(tools_list, total_AA_recall)),
+               columns =['Tool', 'Total AA Recall'])
+    df_total_AA_recall.to_csv(resultdir+"TotalAARecall.csv", index=False)
 
     # TOTAL AA PRECISION
+    df_total_AA_precision = pd.DataFrame(list(zip(tools_list, total_AA_precision)),
+               columns =['Tool', 'Total AA Precision'])
+    df_total_AA_precision.to_csv(resultdir+"TotalAAPrecision.csv", index=False)
 
-    # AUC
+    # AUC VALUE
+    df_AUC = pd.DataFrame(list(zip(tools_list, AUC)),
+               columns =['Tool', 'AUC'])
+    df_AUC.to_csv(resultdir+"AUC.csv", index=False)
+
+    # PRECISION RECALL AA CURVE
+    AA_Recall_Values = [item for sublist in AA_Recall_Values for item in sublist]
+    AA_Precision_Values = [item for sublist in AA_Precision_Values for item in sublist]
+    Tool_Values = [item for sublist in Tool_Values for item in sublist]
+    df_PRcurve = pd.DataFrame(list(zip(Tool_Values, AA_Recall_Values, AA_Precision_Values)),
+               columns =['Tool', 'AA Recall', 'AA Precision'])
+    df_PRcurve.to_csv(resultdir+"PRcurve.csv", index=False)
 
 
-    # TOTAL PEPTIDE RECALL
-    # Tool DatasetName Value
+    # TODO: Two loops to compute AA Recall and Peptide Recall using two predictions
+    # Pick prediction with higher AA match
+
+    total_peptide_recall = []
+    total_AA_recall = []
+    total_AA_precision = []
+
+    df_AA_recall_combined = pd.DataFrame(tools_list)
+    df_peptide_recall_combined = pd.DataFrame(tools_list)
+
+    for tool_one in tools_list:
+        for tool_two in tools_list:
+            logger.info(f"Calculating stats between {tool_one} and {tool_two}")
+            tool_AArecall = []
+            tool_accuracy = []
+            tool_AAprecision = []
+            tool_scorecutoff = []
+
+            true_list = summary_df['Modified Sequence'].tolist()
+            to_test_first = summary_df[tool_one + ' Peptide'].tolist()
+            to_test_second = summary_df[tool_two + ' Peptide'].tolist()
+
+            length_of_predictedAA = 0
+            length_of_realAA = 0
+            number_peptides = 0
+            sum_peptidematch = 0
+            sum_AAmatches = 0
+
+            for i, (pred_peptide_first, pred_peptide_second, true_peptide) in enumerate(zip(to_test_first, to_test_second, true_list)):
+                length_of_realAA += len(true_peptide)
+                number_peptides += 1
+                if ((type(pred_peptide_first) is str or type(pred_peptide_second) is str) and type(true_peptide) is str):
+                    if type(pred_peptide_first) is str:
+                        predicted_AA_id_first = [vocab[x] for x in pred_peptide_first]
+                    else:
+                        predicted_AA_id_first = ""
+                    if type(pred_peptide_second) is str:
+                        predicted_AA_id_second = [vocab[x] for x in pred_peptide_second] # TODO: What if empty?
+                    else:
+                        predicted_AA_id_second = ""
+                    target_AA_id = [vocab[x] for x in true_peptide]
+                    values=[_match_AA_novor(target_AA_id, predicted_AA_id_first), _match_AA_novor(target_AA_id, predicted_AA_id_second)]
+                    recall_AA = max(_match_AA_novor(target_AA_id, predicted_AA_id_first), _match_AA_novor(target_AA_id, predicted_AA_id_second))
+                    index_max = max(range(len(values)), key=values.__getitem__)
+                    if index_max == 0 and type(pred_peptide_first) is str:
+                        length_of_predictedAA += len(pred_peptide_first)
+                    else:
+                        length_of_predictedAA += len(pred_peptide_second)
+                    sum_AAmatches += recall_AA
+                    if recall_AA == len(true_peptide):
+                        sum_peptidematch += 1
+                else:
+                    sum_AAmatches += 0
+            if length_of_predictedAA != 0:
+                tool_accuracy.append(str(sum_peptidematch * 100 / number_peptides))
+                tool_AAprecision.append(str(sum_AAmatches * 100 / length_of_predictedAA))
+                tool_AArecall.append(str(sum_AAmatches * 100 / length_of_realAA))
+            tool_AAprecision = [float(i) for i in tool_AAprecision]
+            tool_AArecall = [float(i) for i in tool_AArecall]
+            tool_accuracy = [float(i) for i in tool_accuracy]
+            total_peptide_recall.append(tool_accuracy[-1])
+            total_AA_recall.append(tool_AArecall[-1])
+            total_AA_precision.append(tool_AAprecision[-1])
+            
+    k=0
+    for i in tools_list:
+        df_AA_recall_combined[i] = total_AA_recall[k:k+len(tools_list)]
+        df_peptide_recall_combined[i] = total_peptide_recall[k:k+len(tools_list)]
+        k = k + len(tools_list) 
+
+    df_AA_recall_combined.to_csv(resultdir+"CombinedAARecall.csv", index=False)
+    df_peptide_recall_combined.to_csv(resultdir+"CombinedPeptideRecall.csv", index=False)
 
 
 
-    '''   
-    ###
-    ### Recall Precision Curve
-    ###
-    AA_recall_histoData = []
-    AA_prec_histoData = []
-    AA_LCS_histoData = []
-    with open(resultdir + "stats_summary.txt", "a+") as text_file:
-        text_file.write("\n Tab separated Table with Amino Acid Recall and Precision \n")
-    plt.style.use('seaborn-colorblind')
-    for i, a in enumerate(tools_list):
-        plt.plot(tools_stats[i][1], tools_stats[i][0], 'o', linestyle='dashed', markersize=4, label=tools_list[i],
-                 color=figure_colors[i])
-        with open(resultdir + "stats_summary.txt", "a+") as text_file:
-            text_file.write(str(round(tools_stats[i][1][-1], 2)) + "\t")
-            AA_recall_histoData.append(round(tools_stats[i][1][-1], 2))
-            AA_LCS_histoData.append(round(tools_stats[i][5][-1], 2))
-    with open(resultdir + "stats_summary.txt", "a+") as text_file:
-        text_file.write("\n")
-    for i, a in enumerate(tools_list):
-        with open(resultdir + "stats_summary.txt", "a+") as text_file:
-            text_file.write(str(round(tools_stats[i][0][-1], 2)) + "\t")
-            AA_prec_histoData.append(round(tools_stats[i][0][-1], 2))
-    plt.legend(bbox_to_anchor=(1.04, 0.5), loc="center left", borderaxespad=0, prop={'size': 7})
-    plt.xlabel('AA Recall (in %)')
-    plt.ylabel('AA Precision (in %)')
-    plt.tight_layout()
-    plt.savefig(resultdir + "recall_precision.jpg", dpi=1200)
-    tikzplotlib.save(resultdir + "recall_precision.tex")
-    plt.close()
+    #TODO: Compute 
+    # PRINT number of spectra with at least one missing cleavage
+    # PRINT % of peaks which are noise
 
-    ###
-    ### AUC Histogram
-    ###
-    plt.style.use('seaborn-colorblind')
-    plt.figure(figsize=[15, 10])
-    with open(resultdir + "stats_summary.txt", "a+") as text_file:
-        text_file.write("\n Tab separated Table with AUC AAlevel \n")
-    with open(resultdir + "stats_summary.txt", "a+") as text_file:
-        for area in AUC:
-            text_file.write(str(round(area, 4)) + "\t")
-    plt.bar(tools_list, AUC, width=0.5, alpha=0.7, color=figure_colors)
-    plt.grid(axis='y', alpha=0.75)
-    plt.ylabel('AUC', fontsize=18)
-    plt.xticks(fontsize=18, rotation=45)
-    plt.yticks(fontsize=18)
-    for i in range(len(tools_list)):
-        plt.text(i, round(AUC[i], 10), round(AUC[i], 3), ha='center', fontsize=12)
-    plt.tight_layout()
-    plt.savefig(resultdir + "AUC_histogram.jpg", dpi=1200)
-    tikzplotlib.save(resultdir + "AUC_histogram.tex")
-    plt.close()
-
-    with open(resultdir + "stats_summary.txt", "a+") as text_file:
-        text_file.write("\n Tab separated Table with Peptide Recall\n")
-
-    for i, a in enumerate(tools_list):
-        tools_stats[i][3].reverse()
-    peptide_histo_data = []
-    ###
-    ### Score vs Peptide Accuracy Curve
-    ###
-    plt.style.use('seaborn-colorblind')
-    for i, a in enumerate(tools_list):
-        plt.plot(tools_stats[i][4], tools_stats[i][3], 'o', linestyle='dashed', markersize=4, label=tools_list[i],
-                 color=figure_colors[i])
-        with open(resultdir + "stats_summary.txt", "a+") as text_file:
-            text_file.write(str(round(tools_stats[i][3][0], 2)) + "\t")
-            peptide_histo_data.append(round(tools_stats[i][3][0], 2))
-    plt.legend(bbox_to_anchor=(1.04, 0.5), loc="center left", borderaxespad=0)
-    plt.xlabel('Confidence Score')
-    plt.ylabel('Peptide Recall (in %)')
-    plt.tight_layout()
-    plt.savefig(resultdir + "peptideacc_vs_score.jpg", dpi=1200)
-    tikzplotlib.save(resultdir + "peptideacc_vs_score.tex")
-    plt.close()
-
-    for i, a in enumerate(tools_list):
-        tools_stats[i][0].reverse()
-
-    ###
-    ### Score vs AA Accuracy
-    ###
-    plt.style.use('seaborn-colorblind')
-    for i, a in enumerate(tools_list):
-        plt.plot(tools_stats[i][4], tools_stats[i][0], 'o', linestyle='dashed', markersize=4, label=tools_list[i],
-                 color=figure_colors[i])
-    plt.legend(bbox_to_anchor=(1.04, 0.5), loc="center left", borderaxespad=0)
-    plt.xlabel('Confidence Score')
-    plt.ylabel('AA Accuracy (in %)')
-    plt.tight_layout()
-    plt.savefig(resultdir + "AAprec_vs_score.jpg", dpi=1200)
-    tikzplotlib.save(resultdir + "AAprec_vs_score.tex")
-    plt.close()
-
-    for i, a in enumerate(tools_list):
-        tools_stats[i][4].reverse()
-
-    ###
-    ### Score vs AA Recall
-    ###
-    plt.style.use('seaborn-colorblind')
-    for i, a in enumerate(tools_list):
-        plt.plot(tools_stats[i][4], tools_stats[i][1], 'o', linestyle='dashed', markersize=4, label=tools_list[i],
-                 color=figure_colors[i])
-    plt.legend(bbox_to_anchor=(1.04, 0.5), loc="center left", borderaxespad=0)
-    plt.xlabel('Confidence Score')
-    plt.ylabel('AA Recall (in %)')
-    plt.tight_layout()
-    plt.savefig(resultdir + "AArecall_vs_score.jpg", dpi=1200)
-    tikzplotlib.save(resultdir + "AArecall_vs_score.tex")
-    plt.close()
-
-    with open(resultdir + "stats_summary.txt", "a+") as text_file:
-        text_file.write("\n Tab separated Table with Peptide Recall\n")
-
-    ###
-    ### Histogram Peptide Recall
-    ###
-    plt.bar(tools_list, peptide_histo_data, width=0.5, alpha=0.7, color=figure_colors)
-    plt.grid(axis='y', alpha=0.75)
-    plt.ylabel('Peptide Recall (%)', fontsize=8)
-    plt.xticks(fontsize=8, rotation=45)
-    plt.yticks(fontsize=8)
-    for i in range(len(tools_list)):
-        plt.text(i, round(peptide_histo_data[i], 3), round(peptide_histo_data[i], 3), ha='center', fontsize=8)
-    plt.tight_layout()
-    plt.savefig(resultdir + "peptide_recall_histogram.jpg", dpi=1200)
-    tikzplotlib.save(resultdir + "peptide_recall_histogram.tex")
-    plt.close()
-
-    ###
-    ### Histogram Amino Acid Recall
-    ###
-    plt.bar(tools_list, AA_recall_histoData, width=0.5, alpha=0.7, color=figure_colors)
-    plt.grid(axis='y', alpha=0.75)
-    plt.ylabel('Amino Acid Recall (%)', fontsize=8)
-    plt.xticks(fontsize=8, rotation=45)
-    plt.yticks(fontsize=8)
-    for i in range(len(tools_list)):
-        plt.text(i, round(AA_recall_histoData[i], 10), round(AA_recall_histoData[i], 3), ha='center', fontsize=8)
-    plt.tight_layout()
-    plt.savefig(resultdir + "aminoacid_recall_histogram.jpg", dpi=1200)
-    tikzplotlib.save(resultdir + "aminoacid_recall_histogram.tex")
-    plt.close()
-
-    ###
-    ### Histogram Amino Acid Precision
-    ###
-    plt.bar(tools_list, AA_prec_histoData, width=0.5, alpha=0.7, color=figure_colors)
-    plt.grid(axis='y', alpha=0.75)
-    plt.ylabel('Amino Acid Precision (%)', fontsize=8)
-    plt.xticks(fontsize=8, rotation=45)
-    plt.yticks(fontsize=8)
-    for i in range(len(tools_list)):
-        plt.text(i, round(AA_prec_histoData[i], 10), round(AA_prec_histoData[i], 3), ha='center', fontsize=8)
-    plt.tight_layout()
-    plt.savefig(resultdir + "aminoacid_precision_histogram.jpg", dpi=1200)
-    tikzplotlib.save(resultdir + "aminoacid_precision_histogram.tex")
-    plt.close()'''
 
 
     ## LENGTH CUTOFF
@@ -545,6 +509,7 @@ def generate_stats(summary_df, resultdir):
                         unknown_error += 1
 
             score_cutoff = score_cutoff - 50
+            # TODO: The following should be exported as CSV!
             if total_errors == 0:
                 total_errors = 1
             with open(resultdir + "stats_summary.txt", "a+") as text_file:
@@ -604,7 +569,10 @@ def convert_For_ALPS(summary_csv, kmer_ALPS, contigs_ALPS, quality_cutoff_ALPS, 
         pass
     
     summary_df = process_summaryfile(summary_csv)
-    #process_ALPS(summary_df, resultdir, kmer_ALPS, contigs_ALPS, quality_cutoff_ALPS)
-    logger.info("Assembly with ALPS finished.")
     if create_stats_results == True:
+        logger.info("Evaluation started.")
         generate_stats(summary_df, resultdir)
+        logger.info(f"Evaluation finished. You can find the results in {resultdir}.")
+    #logger.info("Assembly with ALPS started.")
+    #process_ALPS(summary_df, resultdir, kmer_ALPS, contigs_ALPS, quality_cutoff_ALPS)
+    #logger.info("Assembly with ALPS finished.")
