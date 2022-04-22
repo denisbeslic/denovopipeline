@@ -14,7 +14,7 @@ from sklearn import metrics
 from fast_diff_match_patch import diff
 import logging
 
-from config import vocab, _match_AA_novor, arePermutation, tools_list, figure_colors
+from config import vocab, _match_AA_novor, arePermutation, tools_list
 from createsummary import lcs
 
 pd.options.mode.chained_assignment = None
@@ -119,30 +119,11 @@ def generate_stats(summary_df, resultdir):
             :return
                 generates .txt file with error stats and several figures
     """
-
     # take out peptides that are not verified by database
-
     confident = summary_df['Validation'] == 'Confident'  # | (summary_df['Validation'] == 'Doubtful')
     summary_df = summary_df[confident]
     logger.info(r"The Database Report File has classified " + str(
         len(summary_df.index)) + " spectras as confident (FDR < 1%).")
-
-    
-    # TODO: https://pyteomics.readthedocs.io/en/latest/examples/example_annotation.html
-    # use mgf read
-    # Compute stats for high noise
-    # FIRST get median noise value for all spectra
-    # and also get number of spectra without missing fragment ions (X of X spectras have mising fragment ions)
-    # and amount of noise peaks in contrast to fragment peaks (X OF X (Y.Y%) are noise peaks )
-    # number of missing fragment ions
-    # and so on
-    # Get Recall and Preicison for each Missing Cleavage Site! and Noise Factor!
-    # Get average recall and precision for data with at least one missing cleavage site!
-
-
-
-
-
     
     AUC = []
     tools_stats = []
@@ -168,12 +149,14 @@ def generate_stats(summary_df, resultdir):
             to_test = summary_df[tools + ' Peptide'].tolist()
             to_test_score = summary_df[tools + ' Score'].tolist()
             #TODO the following in a function
+            # length_of_predictedAA, length_of_realAA, number_peptides, sum_peptidematch, sum_AAmatches = recall_precision_BLA
+
+
             length_of_predictedAA = 0
             length_of_realAA = 0
             number_peptides = 0
             sum_peptidematch = 0
             sum_AAmatches = 0
-
             for i, (pred_peptide, true_peptide) in enumerate(zip(to_test, true_list)):
                 length_of_realAA += len(true_peptide)
                 number_peptides += 1
@@ -208,9 +191,6 @@ def generate_stats(summary_df, resultdir):
         AA_Precision_Values.append(tool_AAprecision)
         Confidence_Values.append(tool_scorecutoff)
         Tool_Values.append([tools]*len(tool_scorecutoff))
-
-        #tools_stats.append(
-        #    (tool_AAprecision, tool_AArecall, tool_accuracy, tool_scorecutoff))
 
     
     # TOTAL PEPTIDE RECALL
@@ -315,8 +295,9 @@ def generate_stats(summary_df, resultdir):
 
 
 
-    #TODO: Compute 
     # PRINT number of spectra with at least one missing cleavage
+
+    # PRINT % of peaks which are noise
 
     # TODO: Get % of spectra with at least one missing cleavage site
 
@@ -324,6 +305,13 @@ def generate_stats(summary_df, resultdir):
 
     # Get Recall vs Noise Factor
 
+    # Get Recall vs Noise Factor & Cleavage Site increasing
+
+    # Length of Peptide vs Number of Cleavage Site missing BOXPLOT
+
+    # Length of Peptide vs number of correct Predictions of each Tool # vs All cleavage sites present
+
+    # Amino Acid Recall on HeatMap, NoiseFactor vs. Missing Cleavage Sites
 
 
     ## LENGTH CUTOFF
