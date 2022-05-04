@@ -1,6 +1,8 @@
-# Denovopipeline
+# denovopipeline
 
-Denovopipeline uses multiple de novo sequencing algorithms ([pNovo3](http://pfind.ict.ac.cn/software/pNovo/index.html), [SMSNet](https://github.com/cmb-chula/SMSNet/tree/master#readme), [Novor](https://github.com/compomics/denovogui), [DeepNovo](https://github.com/nh2tran/DeepNovo), and [PointNovo](https://github.com/volpato30/PointNovo) for identification and assembly of peptide sequences by tandem mass spectrometry.
+denovopipeline uses multiple de novo sequencing algorithms ([pNovo3](http://pfind.ict.ac.cn/software/pNovo/index.html), [SMSNet](https://github.com/cmb-chula/SMSNet/tree/master#readme), [Novor](https://github.com/compomics/denovogui), [DeepNovo](https://github.com/nh2tran/DeepNovo), and [PointNovo](https://github.com/volpato30/PointNovo) for identification and assembly of peptide sequences by tandem mass spectrometry.
+
+**This project is under development and in experimental stage**
 
 ## How to use
 
@@ -8,8 +10,8 @@ Denovopipeline uses multiple de novo sequencing algorithms ([pNovo3](http://pfin
 To download the pre-trained models for PointNovo, SMSNet and DeepNovo use following link:
 https://drive.google.com/drive/folders/1LFmez1yq7eXNTNs7IWhYy9vQpLzD8rLI?usp=sharing
 
-Move each corressonding model to the resources/ directory of each de novo sequencing tool.
-Move `knapsack.npy` to `resources/PointNovo` and `resources/DeepNovo`. 
+Move each corresponding model to the resources/ directory of each de novo sequencing tool.
+Move `knapsack.npy` to `resources/PointNovo` and `resources/DeepNovo`.
 
 ### Format raw data
 
@@ -102,7 +104,7 @@ conda activate denovopipeline
 python src/main.py summary --input example_dataset/YOURDATA_reformatted.mgf --results example_dataset/results/ --db example_dataset/results/Default\ PSM\ Report\ with\ non-validated\ matches.txt
 ```
 
-The summary file will be generated in your results directory and include Spectrum Title, Peptide Prediction, Peptide Score, Single Amino Acid score for each tool.
+The summary file will be generated in your results directory and include Spectrum Title, Peptide Prediction, Peptide Score, Single Amino Acid score for each tool. Using database results will also generate information about missing cleavages and noise factor in your spectrum. 
 
 
 ### Assembly results
@@ -113,4 +115,4 @@ To finally assembly the sequence, use convertForALPS
 conda activate denovopipeline
 python src/main.py convertForALPS --input example_dataset/results/summary.csv
 ```
-The command will split up the summary file and generate contigs for each tool in results/ALPS_Assembly. Additionally, it will also generate CSVs with information about the Peptide Recall, AA Recall, AA Precision 
+The command will split up the summary file and generate contigs for each tool in results/ALPS_Assembly. Additionally, it will also generate CSVs with information about the Peptide Recall, AA Recall, AA Precision.
