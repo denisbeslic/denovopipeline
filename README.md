@@ -1,6 +1,31 @@
-# Denovopipeline
+# denovopipeline
 
-Denovopipeline uses multiple de novo sequencing algorithms ([pNovo3](http://pfind.ict.ac.cn/software/pNovo/index.html), [SMSNet](https://github.com/cmb-chula/SMSNet/tree/master#readme), [Novor](https://github.com/compomics/denovogui), [DeepNovo](https://github.com/nh2tran/DeepNovo), and [PointNovo](https://github.com/volpato30/PointNovo) for identification and assembly of peptide sequences by tandem mass spectrometry.
+denovopipeline uses multiple de novo sequencing algorithms ([pNovo3](http://pfind.ict.ac.cn/software/pNovo/index.html), [SMSNet](https://github.com/cmb-chula/SMSNet/tree/master#readme), [Novor](https://github.com/compomics/denovogui), [DeepNovo](https://github.com/nh2tran/DeepNovo), [PointNovo](https://github.com/volpato30/PointNovo), [ALPS](https://github.com/nh2tran/DeepNovo/blob/PNAS/Antibody/ALPS.jar)) for identification and assembly of peptide sequences by tandem mass spectrometry.
+
+## DISCLAIMER
+
+This project is under development and in experimental stage. If you encounter problems, don't hesitate to drop me an E-Mail or open an issue yourself.
+
+
+<details><summary>Click here for all citations </summary>
+
+  * Novor:
+    * Ma B. (2015). Novor: real-time peptide de novo sequencing software. Journal of the American Society for Mass Spectrometry, 26(11), 1885–1894. https://doi.org/10.1007/s13361-015-1204-0
+
+  * pNovo 3:
+    * Yang, H., Chi, H., Zeng, W. F., Zhou, W. J., & He, S. M. (2019). pNovo 3: precise de novo peptide sequencing using a learning-to-rank framework. Bioinformatics (Oxford, England), 35(14), i183–i190. https://doi.org/10.1093/bioinformatics/btz366
+
+  * DeepNovo:
+    * Tran, N. H., Zhang, X., Xin, L., Shan, B., & Li, M. (2017). De novo peptide sequencing by deep learning. Proceedings of the National Academy of Sciences of the United States of America, 114(31), 8247–8252. https://doi.org/10.1073/pnas.1705691114
+
+  * SMSNet:
+    * Karunratanakul, K., Tang, H. Y., Speicher, D. W., Chuangsuwanich, E., & Sriswasdi, S. (2019). Uncovering Thousands of New Peptides with Sequence-Mask-Search Hybrid De Novo Peptide Sequencing Framework. Molecular & cellular proteomics : MCP, 18(12), 2478–2491. https://doi.org/10.1074/mcp.TIR119.001656
+
+  * PointNovo: 
+    * Qiao, R., Tran, N.H., Xin, L. et al. Computationally instrument-resolution-independent de novo peptide sequencing for high-resolution devices. Nat Mach Intell 3, 420–425 (2021). https://doi.org/10.1038/s42256-021-00304-3
+  * ALPS:
+    * Tran, N. H., Rahman, M. Z., He, L., Xin, L., Shan, B., & Li, M. (2016). Complete De Novo Assembly of Monoclonal Antibody Sequences. Scientific reports, 6, 31730. https://doi.org/10.1038/srep31730
+</details>
 
 ## How to use
 
@@ -8,8 +33,8 @@ Denovopipeline uses multiple de novo sequencing algorithms ([pNovo3](http://pfin
 To download the pre-trained models for PointNovo, SMSNet and DeepNovo use following link:
 https://drive.google.com/drive/folders/1LFmez1yq7eXNTNs7IWhYy9vQpLzD8rLI?usp=sharing
 
-Move each corressonding model to the resources/ directory of each de novo sequencing tool.
-Move `knapsack.npy` to `resources/PointNovo` and `resources/DeepNovo`. 
+Move each corresponding model to the resources/ directory of each de novo sequencing tool.
+Move `knapsack.npy` to `resources/PointNovo` and `resources/DeepNovo`.
 
 ### Format raw data
 
@@ -102,7 +127,7 @@ conda activate denovopipeline
 python src/main.py summary --input example_dataset/YOURDATA_reformatted.mgf --results example_dataset/results/ --db example_dataset/results/Default\ PSM\ Report\ with\ non-validated\ matches.txt
 ```
 
-The summary file will be generated in your results directory and include Spectrum Title, Peptide Prediction, Peptide Score, Single Amino Acid score for each tool.
+The summary file will be generated in your results directory and include Spectrum Title, Peptide Prediction, Peptide Score, Single Amino Acid score for each tool. Using database results will also generate information about missing cleavages and noise factor in your spectrum. 
 
 
 ### Assembly results
@@ -113,4 +138,4 @@ To finally assembly the sequence, use convertForALPS
 conda activate denovopipeline
 python src/main.py convertForALPS --input example_dataset/results/summary.csv
 ```
-The command will split up the summary file and generate contigs for each tool in results/ALPS_Assembly. Additionally, it will also generate CSVs with information about the Peptide Recall, AA Recall, AA Precision 
+The command will split up the summary file and generate contigs for each tool in results/ALPS_Assembly. Additionally, it will also generate CSVs with information about the Peptide Recall, AA Recall, AA Precision.
