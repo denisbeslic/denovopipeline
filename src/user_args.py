@@ -3,7 +3,7 @@ import sys
 import logging
 from preprocess import reformat_MGF, denovo_setup
 from denovo import denovo_seq
-from createsummary import denovo_summary
+
 
 logger = logging.getLogger(__name__)
 
@@ -86,6 +86,7 @@ def setup(test_argv=None):
         sys.exit(0)
     elif args.subparser_name == 'summary':
         logger.info("Generating summary file started.")
+        from createsummary import denovo_summary
         denovo_summary(args.input, args.results, args.dbreport)
         sys.exit(0)
     elif args.subparser_name == 'assembly':
