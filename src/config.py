@@ -159,6 +159,35 @@ def _match_AA_novor(target, predicted):
 
     return num_match
 
+
+def _match_AA_novor_errorstats(target, predicted):
+    """TODO(nh2tran): docstring."""
+    num_match = 0
+    target_len = len(target)
+    predicted_len = len(predicted)
+    target_mass = [mass_ID[x] for x in target]
+    target_mass_cum = np.cumsum(target_mass)
+    predicted_mass = [mass_ID[x] for x in predicted]
+    predicted_mass_cum = np.cumsum(predicted_mass)
+    i = 0
+    j = 0
+    ins_prediction = 0
+    del_prediction = 0
+    while i < target_len and j < predicted_len:
+        if abs(target_mass_cum[i] - predicted_mass_cum[j]) < 0.5:
+            if abs(target_mass[i] - predicted_mass[j]) < 0.1:
+                # ~ if  decoder_input[index_aa] == output[index_aa]:
+                num_match += 1
+            i += 1
+            j += 1
+        elif target_mass_cum[i] < predicted_mass_cum[j]:
+            i += 1
+            ins_prediction+=1
+        else:
+            j += 1
+            del_prediction+=1
+    return num_match, ins_prediction, del_prediction
+
 DIMENSION = 90000
 BIN_SIZE = 0.1
 

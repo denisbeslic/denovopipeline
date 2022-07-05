@@ -13,13 +13,15 @@ from sklearn import metrics
 #import tikzplotlib
 from fast_diff_match_patch import diff
 import logging
+from collections import Counter
 
-from config import vocab, _match_AA_novor, arePermutation, tools_list
+from config import vocab, _match_AA_novor, arePermutation, tools_list, _match_AA_novor_errorstats
 from createsummary import lcs
 
 pd.options.mode.chained_assignment = None
 logger = logging.getLogger(__name__)
 logging.getLogger('matplotlib').setLevel(logging.ERROR)
+
 
 # TODO: Add threshold mode: Are we looking at the confidence score, peptide length, noise factor, or missing cleavages?
 def precision_recall_with_threshold(peptides_truth, peptides_predicted, peptides_predicted_confidence, threshold):
@@ -109,8 +111,54 @@ def precision_recall_with_threshold_missingCleavage(peptides_truth, peptides_pre
             sum_AAmatches += 0
     return length_of_predictedAA, length_of_realAA, number_peptides, sum_peptidematch, sum_AAmatches
 
-
-
+def precision_recall_with_length(peptides_truth, peptides_predicted, number_of_cleavages):
+    """
+    Calculate precision and recall for the given confidence score threshold
+    Parameters
+    ----------
+    peptides_truth : list 
+        List of confidence scores for correct amino acids predictions
+    peptides_predicted : list
+        List of confidence scores for all amino acids prediction
+    num_original_aa : list
+        Number of amino acids in the predicted peptide sequences
+    threshold : float
+        confidence score threshold
+           
+    Returns
+    -------
+    aa_precision: float
+        Number of correct aa predictions divided by all predicted aa
+    aa_recall: float
+        Number of correct aa predictions divided by all ground truth aa   
+    peptide_recall: float
+        Number of correct peptide preiditions divided by number of ground truth peptides  
+    """  
+    length_of_predictedAA = 0
+    length_of_realAA = 0
+    number_peptides = 0
+    sum_peptidematch = 0
+    sum_incorrectpeptidematch = 0
+    sum_AAmatches = 0
+    number_peptides_nomissing_cleavage = 0
+    for i, (predicted_peptide, true_peptide, missing_cleavage) in enumerate(zip(peptides_predicted, peptides_truth, number_of_cleavages)):
+        length_of_realAA += len(true_peptide)
+        number_peptides += 1
+        if missing_cleavage == 0:
+            number_peptides_nomissing_cleavage += 1
+        if (type(predicted_peptide) is str and type(true_peptide) is str): #and peptides_predicted_confidence[i] == threshold):
+            length_of_predictedAA += len(predicted_peptide)
+            predicted_AA_id = [vocab[x] for x in predicted_peptide]
+            target_AA_id = [vocab[x] for x in true_peptide]
+            recall_AA = _match_AA_novor(target_AA_id, predicted_AA_id)
+            sum_AAmatches += recall_AA
+            if recall_AA == len(true_peptide):
+                sum_peptidematch += 1
+            else:
+                sum_incorrectpeptidematch += 1
+        else:
+            sum_AAmatches += 0
+    return length_of_predictedAA, length_of_realAA, number_peptides, sum_peptidematch, sum_AAmatches, number_peptides_nomissing_cleavage, sum_incorrectpeptidematch
 
 def process_summaryfile(summary_csv):
     """process summary dataframe for further analysis
@@ -123,7 +171,7 @@ def process_summaryfile(summary_csv):
         summary_df = pd.read_csv(summary_csv, header=0)
         summary_df['Area'] = 1  # is nedded for ALPS
         name_spectrum = summary_df["Spectrum Name"]
-        summary_df["Spectrum Name"] = [i.replace(",", ";") for i in name_spectrum]
+        summary_df["Spectrum Name"] = [str(i).replace(",", ";") for i in name_spectrum]
         return summary_df
     except IOError:
         logger.error(f"Summary File is not accessible. Make sure it's in {summary_csv}")
@@ -136,8 +184,10 @@ def process_ALPS(summary_df, resultdir, kmer_ALPS, contigs_ALPS, quality_cutoff_
             :return
                 executed ALPS.jar and generates fasta files with top contigs
     """
+    #print(Confidence_OVER_50_AA_Prec)
     if Confidence_OVER_50_AA_Prec == []:
         Confidence_OVER_50_AA_Prec = [quality_cutoff_ALPS] * 5
+    #print(Confidence_OVER_50_AA_Prec)
 
     for i, tool in enumerate(tools_list):
         alps_df = summary_df[["Spectrum Name", tool + " Peptide", tool + " aaScore", tool + " Score", "Area"]]
@@ -165,21 +215,21 @@ def process_ALPS(summary_df, resultdir, kmer_ALPS, contigs_ALPS, quality_cutoff_
 
         # will drop empty Peptides
         alps_df.dropna(subset=[tool + " Peptide"], inplace=True)
-        for kmer in [6,7]:
+        for kmer in [6,7,8]:
             alps_df.to_csv(resultdir + tool + '_totalscore.csv', index=False)
             subprocess.run(('java', '-jar', 'resources/ALPS.jar', resultdir + tool + '_totalscore.csv', str(kmer), str(contigs_ALPS), '>>',
                             resultdir + 'assembly.log'), stdout=subprocess.DEVNULL)
 
             # Quality Cut-Off for assembly at given de novo Peptide Score
-            quality_cutoff_ALPS = Confidence_OVER_50_AA_Prec[i]
-            alps_df = alps_df[alps_df[tool + " Score"] > quality_cutoff_ALPS]
-            alps_df.to_csv(resultdir + tool + f'_totalscore_cutoff_{str(quality_cutoff_ALPS)}.csv', index=False)
+            quality_cutoff_ALPS_local = Confidence_OVER_50_AA_Prec[i]
+            alps_df = alps_df[alps_df[tool + " Score"] > quality_cutoff_ALPS_local]
+            alps_df.to_csv(resultdir + tool + f'_totalscore_cutoff_AAPrec_{str(quality_cutoff_ALPS)}_localscore_{str(quality_cutoff_ALPS_local)}.csv', index=False)
             subprocess.run(
-                ('java', '-jar', 'resources/ALPS.jar', resultdir + tool + f'_totalscore_cutoff_{str(quality_cutoff_ALPS)}.csv', str(kmer), str(contigs_ALPS), '>>',
+                ('java', '-jar', 'resources/ALPS.jar', resultdir + tool + f'_totalscore_cutoff_AAPrec_{str(quality_cutoff_ALPS)}_localscore_{str(quality_cutoff_ALPS_local)}.csv', str(kmer), str(contigs_ALPS), '>>',
                 resultdir + 'assembly.log'), stdout=subprocess.DEVNULL)
 
 
-def generate_stats(summary_df, resultdir):
+def generate_stats(summary_df, resultdir, quality_cutoff):
     """
     Generate stats (AA-Recall, AA-Precision, Peptide Recall) based on database search for all tools
             :param
@@ -191,7 +241,7 @@ def generate_stats(summary_df, resultdir):
     # take out peptides that are not verified by database
     confident = summary_df['Validation'] == 'Confident'  # | (summary_df['Validation'] == 'Doubtful')
     summary_df = summary_df[confident]
-    logger.info(r"The Database Report File has classified " + str(
+    logger.info(f"The Database Report File has classified " + str(
         len(summary_df.index)) + " spectras as confident (FDR < 1%).")
     
     AUC = []
@@ -230,14 +280,18 @@ def generate_stats(summary_df, resultdir):
         tool_accuracy = [float(i) for i in tool_accuracy]
         tool_scorecutoff = [int(i) for i in tool_scorecutoff]
         AUC.append(metrics.auc(tool_AArecall, tool_accuracy) / 10000)
-
-        for score, AA_precision  in zip(tool_scorecutoff[::-1], tool_AAprecision[::-1]):
-            if AA_precision >= 50:
-                Confidence_OVER_50_AA_Prec.append(score)
-                break
-            else:
-                Confidence_OVER_50_AA_Prec.append(50)
         
+        # Calculate correct score cutoff for each tool
+        scorecutoff = -1
+        for score, AA_precision  in zip(tool_scorecutoff[::-1], tool_AAprecision[::-1]):
+            if AA_precision >= float(quality_cutoff):
+                scorecutoff = score
+                break
+        if scorecutoff == -1:
+            Confidence_OVER_50_AA_Prec.append(50)
+        else:
+            Confidence_OVER_50_AA_Prec.append(scorecutoff)
+
         total_peptide_recall.append(tool_accuracy[-1])
         total_AA_recall.append(tool_AArecall[-1])
         total_AA_precision.append(tool_AAprecision[-1])
@@ -247,7 +301,6 @@ def generate_stats(summary_df, resultdir):
         Confidence_Values.append(tool_scorecutoff)
         Tool_Values.append([tools]*len(tool_scorecutoff))
 
-    #print(Confidence_OVER_50_AA_Prec)
     # TOTAL PEPTIDE RECALL
     df_total_peptide_recall = pd.DataFrame(list(zip(tools_list, total_peptide_recall)),
                columns =['Tool', 'Total Peptide Recall'])
@@ -478,7 +531,6 @@ def generate_stats(summary_df, resultdir):
     ######################################################
     # Get Recall vs Noise Factor & Cleavage Site increasing
     #####################################################
-    #TODO: solve problem
     tools_stats = []
     total_peptide_recall = []
     total_AA_recall = []
@@ -541,141 +593,151 @@ def generate_stats(summary_df, resultdir):
                columns =['Tool', 'AA Recall', 'Peptide Recall', 'Noise Factor', 'Missing Cleavages'])
     df_PRcurve.to_csv(resultdir+"NoiseFactorANDMissingcleavagesVSRecall.csv", index=False)
 
+    ######################################################
+    # Get Recall vs Cleavage Site & Length increasing
+    #####################################################
+    total_peptide_recall = []
+    total_AA_recall = []
+    total_AA_precision = []
+    Confidence_Values1 = []
+    Confidence_Values2 = []
+    AA_Recall_Values = []
+    AA_Precision_Values = []
+    Peptide_Recall_Values = []
+    Tool_Values = []
+    for tools in tools_list:
+        logger.debug(f"Calculating precision-recall (noise factor & missing cleavages) for {tools}")
+        tool_AArecall = []
+        tool_accuracy = []
+        tool_AAprecision = []
+        tool_scorecutoff_noise = []
+        tool_scorecutoff_cleavages = []
+        noise_factor_cutoff = 20
+        missing_cleavages_cutoff = 8 
+        while (missing_cleavages_cutoff > -1):
+            noise_factor_cutoff = 20
+            while (noise_factor_cutoff > 0):
+                smaller_df = summary_df[summary_df['Modified Sequence'].apply(len) == noise_factor_cutoff]
+                smaller_df = smaller_df[smaller_df['Number of missing cleavages'] == missing_cleavages_cutoff]
+                true_list = smaller_df['Modified Sequence'].tolist()
+                to_test = smaller_df[tools + ' Peptide'].tolist()
+                to_test_score = smaller_df['Noise factor'].tolist() # Replace confidecne score with number of misssing cleavages
+                length_of_predictedAA, length_of_realAA, number_peptides, sum_peptidematch, sum_AAmatches = precision_recall_with_threshold_missingCleavage(true_list, to_test, to_test_score, noise_factor_cutoff)
+                if length_of_predictedAA != 0:
+                    tool_accuracy.append(str(sum_peptidematch * 100 / number_peptides))
+                    tool_AAprecision.append(str(sum_AAmatches * 100 / length_of_predictedAA))
+                    tool_AArecall.append(str(sum_AAmatches * 100 / length_of_realAA))
+                    tool_scorecutoff_noise.append(noise_factor_cutoff)
+                    tool_scorecutoff_cleavages.append(missing_cleavages_cutoff)
+                noise_factor_cutoff = noise_factor_cutoff - 1
+            missing_cleavages_cutoff = missing_cleavages_cutoff - 1
+            
+            tool_AAprecision = [float(i) for i in tool_AAprecision]
+            tool_AArecall = [float(i) for i in tool_AArecall]
+            tool_accuracy = [float(i) for i in tool_accuracy]
+            tool_scorecutoff_noise = [int(i) for i in tool_scorecutoff_noise]
+            tool_scorecutoff_cleavages = [int(i) for i in tool_scorecutoff_cleavages]
 
+        AA_Recall_Values.append(tool_AArecall)
+        AA_Precision_Values.append(tool_AAprecision)
+        Peptide_Recall_Values.append(tool_accuracy)
+        Confidence_Values1.append(tool_scorecutoff_noise)
+        Confidence_Values2.append(tool_scorecutoff_cleavages)
+        Tool_Values.append([tools]*len(tool_scorecutoff_noise))
+        
 
+    # PRECISION RECALL AA CURVE
+    AA_Recall_Values = [item for sublist in AA_Recall_Values for item in sublist]
+    AA_Precision_Values = [item for sublist in AA_Precision_Values for item in sublist]
+    Peptide_Recall_Values = [item for sublist in Peptide_Recall_Values for item in sublist]
+    Tool_Values = [item for sublist in Tool_Values for item in sublist]
+    Confidence_Values1 = [item for sublist in Confidence_Values1 for item in sublist]
+    Confidence_Values2 = [item for sublist in Confidence_Values2 for item in sublist]
+    df_PRcurve = pd.DataFrame(list(zip(Tool_Values, AA_Recall_Values, Peptide_Recall_Values, Confidence_Values1, Confidence_Values2)),
+               columns =['Tool', 'AA Recall', 'Peptide Recall', 'Length', 'Missing Cleavages'])
+    df_PRcurve.to_csv(resultdir+"LengthANDMissingcleavagesVSRecall.csv", index=False)   
 
     ###################################
     ## LENGTH CUTOFF
     ###################################
-
-    total_number_peptides = []
+    tools_stats = []
+    total_peptide_recall = []
+    total_AA_recall = []
+    total_AA_precision = []
+    Confidence_Values = []
     AA_Recall_Values = []
     AA_Precision_Values = []
     Peptide_Recall_Values = []
     Total_Number_Of_Peptides_Values = []
     Predicted_Number_Of_Peptides_Values = []
+    Incorrect_predicted_Number_Of_Peptides_Values = []
     Number_Of_Peptides_WithNoMissingCleavages_Values = []
-    Confidence_Values = []
     Tool_Values = []
-    Tool_Values = []
-
     for tools in tools_list:
-        logger.debug(tools)
+        logger.debug(f"Calculating precision-recall (length) for {tools}")
         tool_AArecall = []
         tool_accuracy = []
         tool_AAprecision = []
-        tool_predictedpeptides = []
         tool_scorecutoff = []
-        tool_totalnumberpeptides = []
-        tool_totalnumberpredictedpeptides = []
-        tool_nomissingcleavages = []
-
-        # get recall-precision relationship by adjusting threshold for tools score
-        score_cutoff = 5
-        while score_cutoff < 22:
-            # cutoff_df = summary_df[summary_df[tools+' Score'] >= score_cutoff]
-            true_list = summary_df['Modified Sequence'].tolist()
-            to_test = summary_df[tools + ' Peptide'].tolist()
-            to_test_score = summary_df[tools + ' Score'].tolist()
-            number_of_cleavages = summary_df['Number of missing cleavages'].tolist()
-            length_of_predictedAA = 0
-            length_of_realAA = 0
-            number_peptides = 0
-            number_peptides_nomissing_cleavage = 0
-            sum_peptidematch = 0
-            sum_AAmatches = 0
-            number_predicted_peptides = 0
-
-            for i, (a, b, cleavages) in enumerate(zip(to_test, true_list, number_of_cleavages)):
-                length_of_realAA += len(b)
-                if score_cutoff == 21:
-                    if (len(b) >= score_cutoff - 1):
-                        number_peptides += 1
-                        if (cleavages == 0):
-                            number_peptides_nomissing_cleavage += 1
-                    if (type(a) is str and type(b) is str and len(b) >= score_cutoff - 1):
-                        length_of_predictedAA += len(a)
-                        predicted_AA_id = [vocab[x] for x in a]
-                        target_AA_id = [vocab[x] for x in b]
-                        recall_AA = _match_AA_novor(target_AA_id, predicted_AA_id)
-                        number_predicted_peptides += 1
-                        sum_AAmatches += recall_AA
-
-                        if recall_AA == len(b):
-                            sum_peptidematch += 1
-                    else:
-                        sum_AAmatches += 0
-                else:
-                    if (len(b) == score_cutoff):
-                        number_peptides += 1
-                        if (cleavages == 0):
-                            number_peptides_nomissing_cleavage += 1
-                    if (type(a) is str and type(b) is str and len(b) == score_cutoff):
-                        length_of_predictedAA += len(a)
-                        predicted_AA_id = [vocab[x] for x in a]
-                        target_AA_id = [vocab[x] for x in b]
-                        recall_AA = _match_AA_novor(target_AA_id, predicted_AA_id)
-                        number_predicted_peptides += 1
-                        sum_AAmatches += recall_AA
-
-                        if recall_AA == len(b):
-                            sum_peptidematch += 1
-                    else:
-                        sum_AAmatches += 0
-            if (number_peptides != 0):
-                tool_accuracy.append(str(sum_peptidematch * 100 / number_peptides))
+        tool_peptidesnomissingcleavages = []
+        tool_predictedpeptides = []
+        tool_incorrectpredictedpeptides = []
+        tool_realpeptides = []
+        length_cutoff = 8 
+        while (length_cutoff < 22):
+            if length_cutoff == 21:
+                smaller_df = summary_df[summary_df['Modified Sequence'].apply(len) == length_cutoff]
             else:
-                tool_accuracy.append(str(0))
-            if (length_of_predictedAA != 0):
+                smaller_df = summary_df[summary_df['Modified Sequence'].apply(len) == length_cutoff]
+            true_list = smaller_df['Modified Sequence'].tolist()
+            to_test = smaller_df[tools + ' Peptide'].tolist()
+            number_of_cleavages = summary_df['Number of missing cleavages'].tolist() # Replace confidecne score with number of misssing cleavages
+            length_of_predictedAA, length_of_realAA, number_peptides, sum_peptidematch, sum_AAmatches, number_peptides_nomissing_cleavage, sum_incorrectpeptidematch = precision_recall_with_length(true_list, to_test, number_of_cleavages)
+            if length_of_predictedAA != 0:
+                tool_accuracy.append(str(sum_peptidematch * 100 / number_peptides))
                 tool_AAprecision.append(str(sum_AAmatches * 100 / length_of_predictedAA))
                 tool_AArecall.append(str(sum_AAmatches * 100 / length_of_realAA))
-            else:
-                tool_AAprecision.append(str(0))
-                tool_AArecall.append(str(0))
-            tool_totalnumberpredictedpeptides.append(number_predicted_peptides)
-            tool_predictedpeptides.append(sum_peptidematch)
-            tool_totalnumberpeptides.append(number_peptides)
-            tool_scorecutoff.append(score_cutoff)
-            tool_nomissingcleavages.append(number_peptides_nomissing_cleavage)
-            score_cutoff = score_cutoff + 1
-
+                tool_scorecutoff.append(length_cutoff)
+                tool_peptidesnomissingcleavages.append(number_peptides_nomissing_cleavage)
+                tool_predictedpeptides.append(sum_peptidematch)
+                tool_incorrectpredictedpeptides.append(sum_incorrectpeptidematch)
+                tool_realpeptides.append(number_peptides)
+            length_cutoff = length_cutoff + 1
         tool_AAprecision = [float(i) for i in tool_AAprecision]
         tool_AArecall = [float(i) for i in tool_AArecall]
         tool_accuracy = [float(i) for i in tool_accuracy]
         tool_scorecutoff = [int(i) for i in tool_scorecutoff]
+        tool_peptidesnomissingcleavages = [int(i) for i in tool_peptidesnomissingcleavages]
         tool_predictedpeptides = [int(i) for i in tool_predictedpeptides]
-        tool_totalnumberpeptides = [int(i) for i in tool_totalnumberpeptides]
-        tool_falsepositiverate = [100 - float(i) for i in tool_AAprecision]
-        tools_stats.append((tool_AAprecision, tool_AArecall, tool_falsepositiverate, tool_accuracy, tool_scorecutoff))
-        
-        
+        tool_incorrectpredictedpeptides = [int(i) for i in tool_incorrectpredictedpeptides]
+        tool_realpeptides = [int(i) for i in tool_realpeptides]
         AA_Recall_Values.append(tool_AArecall)
         AA_Precision_Values.append(tool_AAprecision)
         Peptide_Recall_Values.append(tool_accuracy)
-        Total_Number_Of_Peptides_Values.append(tool_totalnumberpeptides)
-        Predicted_Number_Of_Peptides_Values.append(tool_predictedpeptides)
-        Number_Of_Peptides_WithNoMissingCleavages_Values.append(tool_nomissingcleavages)
         Confidence_Values.append(tool_scorecutoff)
+        Total_Number_Of_Peptides_Values.append(tool_realpeptides)
+        Predicted_Number_Of_Peptides_Values.append(tool_predictedpeptides)
+        Incorrect_predicted_Number_Of_Peptides_Values.append(tool_incorrectpredictedpeptides)
+        Number_Of_Peptides_WithNoMissingCleavages_Values.append(tool_peptidesnomissingcleavages)
         Tool_Values.append([tools]*len(tool_scorecutoff))
 
-    
-    # LENGTH
+    # PRECISION RECALL AA CURVE
     AA_Recall_Values = [item for sublist in AA_Recall_Values for item in sublist]
     AA_Precision_Values = [item for sublist in AA_Precision_Values for item in sublist]
+    Peptide_Recall_Values = [item for sublist in Peptide_Recall_Values for item in sublist]
     Tool_Values = [item for sublist in Tool_Values for item in sublist]
-    Confidence_Values = [item for sublist in Confidence_Values for item in sublist]
+    Confidence_Value = [item for sublist in Confidence_Values for item in sublist]
     Total_Number_Of_Peptides_Values = [item for sublist in Total_Number_Of_Peptides_Values for item in sublist]
     Predicted_Number_Of_Peptides_Values = [item for sublist in Predicted_Number_Of_Peptides_Values for item in sublist]
+    Incorrect_predicted_Number_Of_Peptides_Values = [item for sublist in Incorrect_predicted_Number_Of_Peptides_Values for item in sublist]
     Number_Of_Peptides_WithNoMissingCleavages_Values = [item for sublist in Number_Of_Peptides_WithNoMissingCleavages_Values for item in sublist]
-
-    df_lengthValues = pd.DataFrame(list(zip(Tool_Values, AA_Recall_Values, AA_Precision_Values, Confidence_Values, Total_Number_Of_Peptides_Values,
-        Number_Of_Peptides_WithNoMissingCleavages_Values, Predicted_Number_Of_Peptides_Values)),
-               columns =['Tool', 'AA Recall', 'AA Precision', 'Length', 'Total number of peptides', 
-               'Total number of peptides without missing cleavage', 'Number of predicted peptides'])
-    df_lengthValues.to_csv(resultdir+"LengthVsRecall.csv", index=False)
+    df_PRcurve = pd.DataFrame(list(zip(Tool_Values, AA_Recall_Values, Peptide_Recall_Values, Confidence_Value, Total_Number_Of_Peptides_Values,
+        Predicted_Number_Of_Peptides_Values, Incorrect_predicted_Number_Of_Peptides_Values, Number_Of_Peptides_WithNoMissingCleavages_Values)),
+               columns =['Tool', 'AA Recall', 'Peptide Recall', 'Peptide Length', 'Total number of peptides', 'Number of correct predictions', 'Number of incorrect predictions', 'Number of peptides without missing cleavages'])
+    df_PRcurve.to_csv(resultdir+"LengthVsRecall.csv", index=False)  
 
     #################################################################################################
-    #                                         Error stats                                            #
+    #                                         Error stats                                           #
     #################################################################################################
 
     logger.debug("Error Evaluation.")
@@ -708,6 +770,10 @@ def generate_stats(summary_df, resultdir):
 
             Which_2AA_list = []
 
+            tuples_SingleReplacements = []
+            
+            # TODO: use difflib differ?
+
             for i, (pred_peptide, true_peptide) in enumerate(zip(to_test, true_list)):
                 if type(pred_peptide) is str and type(true_peptide) is str and to_test_score[i] >= score_cutoff:
                     changes = diff(pred_peptide, true_peptide, timelimit=0, checklines=False)
@@ -716,16 +782,23 @@ def generate_stats(summary_df, resultdir):
                     longest_mismatch = 0
                     longest_mismatch_exactposition = -1
                     length_seq = 0
+                    lengthseq2 = 0
                     number_of_predictions += 1
+                    pos_deletion = 0
+                    pos_insertion = 0
                     for z, (op, length) in enumerate(changes):
                         length_seq += length
                         # if op == "-": print("next", length, "characters are deleted")
                         # if op == "=": print("next", length, "characters are in common")
                         # if op == "+": print("next", length, "characters are inserted")
+                        if op == "=":
+                            lengthseq2 += length
                         if op == "+" and length > longest_mismatch_pos:
                             longest_mismatch_pos = length
+                            pos_insertion=lengthseq2
                         if op == "-" and length > longest_mismatch_neg:
                             longest_mismatch_neg = length
+                            pos_deletion = lengthseq2
                         if (op == "+" or op == "-") and length > longest_mismatch:
                             longest_mismatch = length
                             longest_mismatch_exactposition = length_seq - length
@@ -747,6 +820,9 @@ def generate_stats(summary_df, resultdir):
                     elif (longest_mismatch_pos == 1 and 1 >= longest_mismatch_neg <= 2) or (
                             1 >= longest_mismatch_pos <= 2 and longest_mismatch_neg == 1):
                         amount_1AA_replacements += 1
+                        if pos_deletion == pos_insertion:
+                            singleElem = tuple(sorted((pred_peptide[pos_deletion], true_peptide[pos_insertion])))
+                            tuples_SingleReplacements.append(singleElem)
                         if pred_peptide[0] != true_peptide[0]:
                             amount_1AA_replacements_firstposition += 1
                         elif pred_peptide[0:1] != true_peptide[0:1]:
@@ -770,6 +846,10 @@ def generate_stats(summary_df, resultdir):
 
             if total_errors == 0:
                 total_errors = 1
+            #print(tools)
+            #print(score_cutoff)
+            #print(len(tuples_SingleReplacements))
+            #print(Counter(tuples_SingleReplacements))
 
             with open(resultdir + "error_eval.txt", "a+") as text_file:
                 text_file.write("\n\nError Evaluation for " + str(tools))
@@ -819,7 +899,7 @@ def generate_stats(summary_df, resultdir):
                 text_file.write("\n--------------------")
             score_cutoff = score_cutoff - 50
 
-    summary_df_nomissingCleavages = summary_df[summary_df['Number of missing cleavages'] == 0]
+    summary_df_nomissingCleavages = summary_df[summary_df['Number of missing cleavages'] <= 0]
     with open(resultdir + "error_eval_nomissingcleavages.txt", "w+") as text_file:
         None
     for tools in tools_list:
@@ -976,7 +1056,7 @@ def convert_For_ALPS(summary_csv, kmer_ALPS, contigs_ALPS, quality_cutoff_ALPS, 
     Confidence_OVER_50_AA_Prec = []
     if create_stats_results == True:
         logger.info("Evaluation started.")
-        Confidence_OVER_50_AA_Prec = generate_stats(summary_df, resultdir)
+        Confidence_OVER_50_AA_Prec = generate_stats(summary_df, resultdir, quality_cutoff_ALPS)
         logger.info(f"Evaluation finished. You can find the results in {resultdir}.")
     logger.info("Assembly with ALPS started.")
     process_ALPS(summary_df, resultdir, kmer_ALPS, contigs_ALPS, quality_cutoff_ALPS, Confidence_OVER_50_AA_Prec)
