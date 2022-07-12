@@ -184,10 +184,8 @@ def process_ALPS(summary_df, resultdir, kmer_ALPS, contigs_ALPS, quality_cutoff_
             :return
                 executed ALPS.jar and generates fasta files with top contigs
     """
-    #print(Confidence_OVER_50_AA_Prec)
     if Confidence_OVER_50_AA_Prec == []:
         Confidence_OVER_50_AA_Prec = [quality_cutoff_ALPS] * 5
-    #print(Confidence_OVER_50_AA_Prec)
 
     for i, tool in enumerate(tools_list):
         alps_df = summary_df[["Spectrum Name", tool + " Peptide", tool + " aaScore", tool + " Score", "Area"]]

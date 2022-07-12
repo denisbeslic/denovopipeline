@@ -54,7 +54,6 @@ def run_deepnovo(mgf_in, dir_out, deepnovo_model):
     mgf_in = os.path.abspath(mgf_in)
 
     # manipulate config file to change to correct input
-
     configfile = "resources/DeepNovo_Antibody/data_utils.py"
     with open(configfile, 'r') as file:
         data = file.readlines()

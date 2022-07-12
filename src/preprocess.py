@@ -6,7 +6,6 @@ def denovo_setup():
     print("Function denovo_setup was called.")
     # TODO: Write function to automatically download all necessary models, knapsack files, test data.
 
-
 '''
 Function for formatting MGF file is taken from PostNovo
 
@@ -16,14 +15,10 @@ Date: 14.Aug. 2019
 Version: 1.0.9-alpha
 Link: https://github.com/semiller10/postnovo/blob/988b728fad96815fbe94a2bd4dc79ec3b417f099/userargs.py#L1558
 '''
-
-
 def reformat_MGF(mgf_in, mgf_out):
     print("Function reformat_MGF was called.")
     print(mgf_in)
     print(mgf_out)
-
-    # from postnovo/userargs.py
     new_index = 1
     new_scan = 1
     with open(mgf_in) as in_f, open(mgf_out, 'w') as out_f, open(mgf_out.replace(".mgf", "_deepnovo.mgf"),
