@@ -227,6 +227,9 @@ def process_ALPS(summary_df, resultdir, kmer_ALPS, contigs_ALPS, quality_cutoff_
                 resultdir + 'assembly.log'), stdout=subprocess.DEVNULL)
 
 
+
+
+
 def generate_stats(summary_df, resultdir, quality_cutoff):
     """
     Generate stats (AA-Recall, AA-Precision, Peptide Recall) based on database search for all tools
@@ -243,7 +246,6 @@ def generate_stats(summary_df, resultdir, quality_cutoff):
         len(summary_df.index)) + " spectras as confident (FDR < 1%).")
     
     AUC = []
-    tools_stats = []
     total_peptide_recall = []
     total_AA_recall = []
     total_AA_precision = []
@@ -471,6 +473,59 @@ def generate_stats(summary_df, resultdir, quality_cutoff):
     df_PRcurve = pd.DataFrame(list(zip(Tool_Values, AA_Recall_Values, Peptide_Recall_Values, Confidence_Value)),
                columns =['Tool', 'AA Recall', 'Peptide Recall', 'Missing Cleavage Sites'])
     df_PRcurve.to_csv(resultdir+"MissingCleavagesVSRecall.csv", index=False)
+
+
+    ######################
+    # Get Recall vs Number of Cleavage Sites missing (including a-ions)
+    # from 0 to 10
+    if 'Number of missing cleavages (including a-ions)' in summary_df.columns:
+        total_peptide_recall = []
+        total_AA_recall = []
+        total_AA_precision = []
+        Confidence_Values = []
+        AA_Recall_Values = []
+        AA_Precision_Values = []
+        Peptide_Recall_Values = []
+        Tool_Values = []
+        for tools in tools_list:
+            logger.debug(f"Calculating precision-recall (missing cleavages inlcuding a-ions) for {tools}")
+            tool_AArecall = []
+            tool_accuracy = []
+            tool_AAprecision = []
+            tool_scorecutoff = []
+            missing_cleavages_cutoff = 8 
+            while (missing_cleavages_cutoff > -1):
+                smaller_df = summary_df[summary_df['Number of missing cleavages (including a-ions)'] == missing_cleavages_cutoff]
+                true_list = smaller_df['Modified Sequence'].tolist()
+                to_test = smaller_df[tools + ' Peptide'].tolist()
+                to_test_score = smaller_df['Number of missing cleavages (including a-ions)'].tolist() # Replace confidecne score with number of misssing cleavages
+                length_of_predictedAA, length_of_realAA, number_peptides, sum_peptidematch, sum_AAmatches = precision_recall_with_threshold_missingCleavage(true_list, to_test, to_test_score, missing_cleavages_cutoff)
+                if length_of_predictedAA != 0:
+                    tool_accuracy.append(str(sum_peptidematch * 100 / number_peptides))
+                    tool_AAprecision.append(str(sum_AAmatches * 100 / length_of_predictedAA))
+                    tool_AArecall.append(str(sum_AAmatches * 100 / length_of_realAA))
+                    tool_scorecutoff.append(missing_cleavages_cutoff)
+                missing_cleavages_cutoff = missing_cleavages_cutoff - 1
+            tool_AAprecision = [float(i) for i in tool_AAprecision]
+            tool_AArecall = [float(i) for i in tool_AArecall]
+            tool_accuracy = [float(i) for i in tool_accuracy]
+            tool_scorecutoff = [int(i) for i in tool_scorecutoff]
+            AA_Recall_Values.append(tool_AArecall)
+            AA_Precision_Values.append(tool_AAprecision)
+            Peptide_Recall_Values.append(tool_accuracy)
+            Confidence_Values.append(tool_scorecutoff)
+            Tool_Values.append([tools]*len(tool_scorecutoff))
+
+        # PRECISION RECALL AA CURVE
+        AA_Recall_Values = [item for sublist in AA_Recall_Values for item in sublist]
+        AA_Precision_Values = [item for sublist in AA_Precision_Values for item in sublist]
+        Peptide_Recall_Values = [item for sublist in Peptide_Recall_Values for item in sublist]
+        Tool_Values = [item for sublist in Tool_Values for item in sublist]
+        Confidence_Value = [item for sublist in Confidence_Values for item in sublist]
+        df_PRcurve = pd.DataFrame(list(zip(Tool_Values, AA_Recall_Values, Peptide_Recall_Values, Confidence_Value)),
+                columns =['Tool', 'AA Recall', 'Peptide Recall', 'Missing Cleavage Sites'])
+        df_PRcurve.to_csv(resultdir+"MissingCleavages_inlcudingAIons_VSRecall.csv", index=False)
+
 
 
     #############################################################
@@ -986,7 +1041,6 @@ def generate_stats(summary_df, resultdir, quality_cutoff):
                         unknown_error += 1
 
             score_cutoff = score_cutoff - 50
-            # TODO: The following should be exported as CSV!
 
             if total_errors == 0:
                 total_errors = 1

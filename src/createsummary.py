@@ -15,7 +15,7 @@ from config import vocab_reverse_nomods, readmgf, mass_AA, mass_tol
 
 logger = logging.getLogger(__name__)
 
-def fragments(peptide, types=('b', 'y')):
+def fragments(peptide, types=('b', 'a', 'y')):
     """
     The function generates possible m/z for fragments of 8 ion types
     b, b2+, b-NH3, b-H2O, y, y2+, y-NH3, y-H2O
@@ -26,13 +26,13 @@ def fragments(peptide, types=('b', 'y')):
             b_ions: list of list of b_ions
             y_ions: list of list of y_ions
     """
-
+    a_ions = []
     b_ions = []
     y_ions = []
 
     for i in range(1, len(peptide)):
         for ion_type in types:
-            if ion_type[0] in 'abc':
+            if ion_type[0] in 'b':
                 b_ion_types = []
                 # b
                 b_ion_types.append(mass.fast_mass(
@@ -47,6 +47,21 @@ def fragments(peptide, types=('b', 'y')):
                 b_ion_types.append(mass.fast_mass(
                         peptide[:i], ion_type=ion_type, charge=1, aa_mass=mass_AA) - mass.calculate_mass(formula='NH3', charge=1))
                 b_ions.append(b_ion_types)
+            if ion_type[0] in 'a':
+                a_ion_types = []
+                # a
+                a_ion_types.append(mass.fast_mass(
+                        peptide[:i], ion_type=ion_type, charge=1, aa_mass=mass_AA))
+                # a(2+)
+                a_ion_types.append(mass.fast_mass(
+                        peptide[:i], ion_type=ion_type, charge=2, aa_mass=mass_AA))
+                # a-H2O
+                a_ion_types.append(mass.fast_mass(
+                        peptide[:i], ion_type=ion_type, charge=1, aa_mass=mass_AA) - mass.calculate_mass(formula='H2O', charge=1))
+                # a-NH3
+                a_ion_types.append(mass.fast_mass(
+                        peptide[:i], ion_type=ion_type, charge=1, aa_mass=mass_AA) - mass.calculate_mass(formula='NH3', charge=1))
+                a_ions.append(a_ion_types)
             else:
                 y_ion_types = []
                 # y
@@ -62,7 +77,7 @@ def fragments(peptide, types=('b', 'y')):
                 y_ion_types.append(mass.fast_mass(
                         peptide[i:], ion_type=ion_type, charge=1, aa_mass=mass_AA) - mass.calculate_mass(formula='NH3', charge=1))
                 y_ions.append(y_ion_types)
-    return b_ions, y_ions
+    return a_ions, b_ions, y_ions
 
 def lcs(s1, s2):
     """Length of Longest Common Substring between two strings"""
@@ -96,21 +111,35 @@ def noise_and_fragmentIons(df, mgf_in_path):
 
         missing_cleavages = []
         cleavages_positions = []
+        missing_cleavages_including_aions = []
+        cleavages_positions_including_aions = []
         noise_intensities = []
         for spectrum, peptide in zip(spectra, df["Modified Sequence"]):
             if type(peptide) != float:
-                b_ions, y_ions = fragments(peptide)
+                a_ions, b_ions, y_ions = fragments(peptide)
                 missing_cleavage = 0
+                missing_cleavage_including_aions = 0
                 cleavage_position = []
-                for pos, (b_ion, y_ion) in enumerate(zip(b_ions, reversed(y_ions))):
+                cleavage_position_inlcuding_aions = []
+                for pos, (a_ion, b_ion, y_ion) in enumerate(zip(a_ions, b_ions, reversed(y_ions))):
+                    a_ions_present = [True for i in a_ion if np.isclose(spectrum['m/z array'], i, atol=mass_tol).any()]
                     b_ions_present = [True for i in b_ion if np.isclose(spectrum['m/z array'], i, atol=mass_tol).any()]
                     y_ions_present = [True for i in y_ion if np.isclose(spectrum['m/z array'], i, atol=mass_tol).any()]
                     if b_ions_present or y_ions_present:
                         cleavage_position.append(pos+1)
                     else:
                         missing_cleavage +=1
+                    
+                    if b_ions_present or y_ions_present or a_ions_present:
+                        cleavage_position_inlcuding_aions.append(pos+1)
+                    else:
+                        missing_cleavage_including_aions += 1
                 missing_cleavages.append(int(missing_cleavage))
                 cleavages_positions.append(cleavage_position)
+
+                missing_cleavages_including_aions.append(int(missing_cleavage_including_aions))
+                cleavages_positions_including_aions.append(cleavage_position_inlcuding_aions)
+
 
                 spectrum_intensity = spectrum['intensity array'] 
                 for pos, (b_ion, y_ion) in enumerate(zip(b_ions, reversed(y_ions))):
@@ -124,9 +153,12 @@ def noise_and_fragmentIons(df, mgf_in_path):
             else:
                 missing_cleavages.append(np.nan)
                 cleavages_positions.append(np.nan)
-        
+                missing_cleavages_including_aions.append(np.nan)
+                cleavages_positions_including_aions.append(np.nan)
         df["Number of missing cleavages"] = missing_cleavages
         df["Position of present cleavages"] = cleavages_positions
+        df["Number of missing cleavages (including a-ions)"] = missing_cleavages_including_aions
+        df["Position of present cleavages (including a-ions)"] = cleavages_positions_including_aions
         median_noise = np.nanmedian(noise_intensities)
         median_missing_cleavages = np.nanmedian(missing_cleavages)
         logger.info(f"Median noise intensity: {median_noise}")
@@ -154,7 +186,7 @@ def noise_factor(df, mgf_in_path, median_noise):
             if type(peptide) != float:
                 amount_noise_peaks = 0
                 amount_fragment_peaks = 0
-                b_ions, y_ions = fragments(peptide)
+                a_ions, b_ions, y_ions = fragments(peptide)
                 spectrum_intensity = spectrum['intensity array'] 
                 for pos, (b_ion, y_ion) in enumerate(zip(b_ions, reversed(y_ions))):
                     b = [np.nonzero(np.isclose(spectrum['m/z array'], i, atol=mass_tol)) for i in b_ion if np.isclose(spectrum['m/z array'], i, atol=mass_tol).any()]
