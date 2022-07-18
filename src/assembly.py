@@ -227,34 +227,15 @@ def process_ALPS(summary_df, resultdir, kmer_ALPS, contigs_ALPS, quality_cutoff_
                 resultdir + 'assembly.log'), stdout=subprocess.DEVNULL)
 
 
-
-
-
-def generate_stats(summary_df, resultdir, quality_cutoff):
-    """
-    Generate stats (AA-Recall, AA-Precision, Peptide Recall) based on database search for all tools
-            :param
-                summary_df: dataframe of different tools with score, peptide and aascore
-                resultdir: path to result directory
-            :return
-                generates .txt file with error stats and several figures
-    """
-    # take out peptides that are not verified by database
-    confident = summary_df['Validation'] == 'Confident'  # | (summary_df['Validation'] == 'Doubtful')
-    summary_df = summary_df[confident]
-    logger.info(f"The Database Report File has classified " + str(
-        len(summary_df.index)) + " spectras as confident (FDR < 1%).")
-    
+def recall_prec_stats(summary_df, resultdir, quality_cutoff):
     AUC = []
     total_peptide_recall = []
     total_AA_recall = []
     total_AA_precision = []
-
     Confidence_Values = []
     AA_Recall_Values = []
     AA_Precision_Values = []
     Tool_Values = []
-
     Confidence_OVER_50_AA_Prec = []
 
     for tools in tools_list:
@@ -334,11 +315,38 @@ def generate_stats(summary_df, resultdir, quality_cutoff):
     total_peptide_recall = []
     total_AA_recall = []
     total_AA_precision = []
+    return Confidence_OVER_50_AA_Prec
+    
+def noise_and_cleavage_summary(summary_df):
+    # Number of spectra with at least one missing cleavage site
+    AtLeastOneMissing = len(summary_df[summary_df['Number of missing cleavages'] > 0])
+    logger.info(f"{AtLeastOneMissing*100/len(summary_df)}% of confident peptide spectrum matches are missing at least 1 fragment ions.")
+    
+    # Number of spectra without missing cleavage at first position
+    list_of_positions = summary_df['Position of present cleavages'].tolist()
+    missingcleavage_at_first_position = 0
+    for i in list_of_positions:
+        if(i[1] != "1"):
+            missingcleavage_at_first_position += 1
+    logger.info(f"{missingcleavage_at_first_position*100/len(summary_df)}% of confident peptide spectrum matches are missing the first cleavage site.")
 
+    # PRINT % of peaks which are noise
+    total_amount_noisepeaks = sum(summary_df["Number of noise peaks"].tolist())
+    total_amount_fragmentpeaks = sum(summary_df["Number of fragment peaks"].tolist())
+    logger.info(f"{total_amount_noisepeaks*100/(total_amount_noisepeaks+total_amount_fragmentpeaks)}% of all peaks are considered noise")
+
+def combined_tool_stats(summary_df, resultdir, quality_cutoff):
     df_AA_recall_combined = pd.DataFrame(tools_list)
     df_peptide_recall_combined = pd.DataFrame(tools_list)
-
-    # Loop for evaluation of two tools
+    AUC = []
+    total_peptide_recall = []
+    total_AA_recall = []
+    total_AA_precision = []
+    Confidence_Values = []
+    AA_Recall_Values = []
+    AA_Precision_Values = []
+    Tool_Values = []
+    Confidence_OVER_50_AA_Prec = []
     logger.debug("Calculating recall stats for pairs of tools")
     for tool_one in tools_list:
         for tool_two in tools_list:
@@ -403,27 +411,7 @@ def generate_stats(summary_df, resultdir, quality_cutoff):
     df_AA_recall_combined.to_csv(resultdir+"CombinedAARecall.csv", index=False)
     df_peptide_recall_combined.to_csv(resultdir+"CombinedPeptideRecall.csv", index=False)
 
-
-    # Number of spectra with at least one missing cleavage site
-    AtLeastOneMissing = len(summary_df[summary_df['Number of missing cleavages'] > 0])
-    logger.info(f"{AtLeastOneMissing*100/len(summary_df)}% of confident peptide spectrum matches are missing at least 1 fragment ions.")
-    
-    # Number of spectra without missing cleavage at first position
-    list_of_positions = summary_df['Position of present cleavages'].tolist()
-    missingcleavage_at_first_position = 0
-    for i in list_of_positions:
-        if(i[1] != "1"):
-            missingcleavage_at_first_position += 1
-    logger.info(f"{missingcleavage_at_first_position*100/len(summary_df)}% of confident peptide spectrum matches are missing the first cleavage site.")
-
-    # PRINT % of peaks which are noise
-    total_amount_noisepeaks = sum(summary_df["Number of noise peaks"].tolist())
-    total_amount_fragmentpeaks = sum(summary_df["Number of fragment peaks"].tolist())
-    logger.info(f"{total_amount_noisepeaks*100/(total_amount_noisepeaks+total_amount_fragmentpeaks)}% of all peaks are considered noise")
-
-
-
-    ######################
+def recall_vs_missingcleavages(summary_df, resultdir, quality_cutoff):
     # Get Recall vs Number of Cleavage Sites missing
     # from 0 to 10
     tools_stats = []
@@ -474,7 +462,7 @@ def generate_stats(summary_df, resultdir, quality_cutoff):
                columns =['Tool', 'AA Recall', 'Peptide Recall', 'Missing Cleavage Sites'])
     df_PRcurve.to_csv(resultdir+"MissingCleavagesVSRecall.csv", index=False)
 
-
+def recall_vs_missingcleavages_including_aIons(summary_df, resultdir, quality_cutoff):
     ######################
     # Get Recall vs Number of Cleavage Sites missing (including a-ions)
     # from 0 to 10
@@ -526,8 +514,7 @@ def generate_stats(summary_df, resultdir, quality_cutoff):
                 columns =['Tool', 'AA Recall', 'Peptide Recall', 'Missing Cleavage Sites'])
         df_PRcurve.to_csv(resultdir+"MissingCleavages_inlcudingAIons_VSRecall.csv", index=False)
 
-
-
+def recall_vs_noisefactor(summary_df, resultdir, quality_cutoff):
     #############################################################
     # Get Recall vs Noise Factor
     # start at maximum of 3 
@@ -581,6 +568,7 @@ def generate_stats(summary_df, resultdir, quality_cutoff):
                columns =['Tool', 'AA Recall', 'Peptide Recall', 'Noise Factor'])
     df_PRcurve.to_csv(resultdir+"NoiseFactorVSRecall.csv", index=False)
 
+def recall_vs_noisefactor_and_missingcleavages(summary_df, resultdir, quality_cutoff):
     ######################################################
     # Get Recall vs Noise Factor & Cleavage Site increasing
     #####################################################
@@ -646,6 +634,7 @@ def generate_stats(summary_df, resultdir, quality_cutoff):
                columns =['Tool', 'AA Recall', 'Peptide Recall', 'Noise Factor', 'Missing Cleavages'])
     df_PRcurve.to_csv(resultdir+"NoiseFactorANDMissingcleavagesVSRecall.csv", index=False)
 
+def recall_vs_missingcleavages_and_length(summary_df, resultdir, quality_cutoff):
     ######################################################
     # Get Recall vs Cleavage Site & Length increasing
     #####################################################
@@ -710,6 +699,7 @@ def generate_stats(summary_df, resultdir, quality_cutoff):
                columns =['Tool', 'AA Recall', 'Peptide Recall', 'Length', 'Missing Cleavages'])
     df_PRcurve.to_csv(resultdir+"LengthANDMissingcleavagesVSRecall.csv", index=False)   
 
+def recall_vs_length(summary_df, resultdir, quality_cutoff):
     ###################################
     ## LENGTH CUTOFF
     ###################################
@@ -789,6 +779,8 @@ def generate_stats(summary_df, resultdir, quality_cutoff):
                columns =['Tool', 'AA Recall', 'Peptide Recall', 'Peptide Length', 'Total number of peptides', 'Number of correct predictions', 'Number of incorrect predictions', 'Number of peptides without missing cleavages'])
     df_PRcurve.to_csv(resultdir+"LengthVsRecall.csv", index=False)  
 
+
+def error_stats(summary_df, resultdir, quality_cutoff):
     #################################################################################################
     #                                         Error stats                                           #
     #################################################################################################
@@ -1092,8 +1084,60 @@ def generate_stats(summary_df, resultdir, quality_cutoff):
                     "\nOther Error: " + str(unknown_error) + " and in % " + str(unknown_error * 100 / total_errors))
                 text_file.write("\n--------------------")
     logger.debug("Error Evaluation finished.")
-    return Confidence_OVER_50_AA_Prec
 
+
+def generate_stats(summary_df, resultdir, quality_cutoff):
+    """
+    Generate stats (AA-Recall, AA-Precision, Peptide Recall) based on database search for all tools
+            :param
+                summary_df: dataframe of different tools with score, peptide and aascore
+                resultdir: path to result directory
+            :return
+                generates .txt file with error stats and several figures
+    """
+    # take out peptides that are not verified by database
+    confident = summary_df['Validation'] == 'Confident'  # | (summary_df['Validation'] == 'Doubtful')
+    summary_df = summary_df[confident]
+    logger.info(f"The Database Report File has classified " + str(
+        len(summary_df.index)) + " spectras as confident (FDR < 1%).")
+    
+    # prints information about missing cleavages and noise
+    noise_and_cleavage_summary(summary_df)
+
+    # calculates and exports AA recall, AA precision, peptide recall
+    Confidence_OVER_50_AA_Prec = recall_prec_stats(summary_df, resultdir, quality_cutoff)
+
+    # calculates and exports AA recall, AA precision, peptide recall between pairs of tools
+    combined_tool_stats(summary_df, resultdir, quality_cutoff)
+
+    # calculates and exports AA recall, AA precision, peptide recall 
+    # for spectra with different number of missing cleavages
+    recall_vs_missingcleavages(summary_df, resultdir, quality_cutoff)
+
+    # calculates and exports AA recall, AA precision, peptide recall 
+    # for spectra with different number of missing cleavages including a-ions
+    recall_vs_missingcleavages_including_aIons(summary_df, resultdir, quality_cutoff)
+
+    # calculates and exports AA recall, AA precision, peptide recall 
+    # for spectra with different number of noise factors
+    recall_vs_noisefactor(summary_df, resultdir, quality_cutoff)
+
+    # calculates and exports AA recall, AA precision, peptide recall 
+    # for spectra with different number of missing cleavage and noise factors
+    recall_vs_noisefactor_and_missingcleavages(summary_df, resultdir, quality_cutoff)
+
+    # calculates and exports AA recall, AA precision, peptide recall 
+    # for spectra with different number of missing cleavage and peptide lengths
+    recall_vs_missingcleavages_and_length(summary_df, resultdir, quality_cutoff)
+
+    # calculates and exports AA recall, AA precision, peptide recall 
+    # for spectra with different peptide lengths
+    recall_vs_length(summary_df, resultdir, quality_cutoff)
+
+    # generates error stats
+    error_stats(summary_df, resultdir, quality_cutoff)
+
+    return Confidence_OVER_50_AA_Prec
 
 
 def convert_For_ALPS(summary_csv, kmer_ALPS, contigs_ALPS, quality_cutoff_ALPS, create_stats_results):
