@@ -177,15 +177,15 @@ def process_summaryfile(summary_csv):
         logger.error(f"Summary File is not accessible. Make sure it's in {summary_csv}")
 
 
-def process_ALPS(summary_df, resultdir, kmer_ALPS, contigs_ALPS, quality_cutoff_ALPS, Confidence_OVER_50_AA_Prec = []):
+def process_ALPS(summary_df, resultdir, kmer_ALPS, contigs_ALPS, quality_cutoff_ALPS, Confidence_Threshold_For_ALPS = []):
     """process summary file with ALPS to assemble full sequence
             :param
                 summary_df: dataframe of different tools with score, peptide and aascore
             :return
                 executed ALPS.jar and generates fasta files with top contigs
     """
-    if Confidence_OVER_50_AA_Prec == []:
-        Confidence_OVER_50_AA_Prec = [quality_cutoff_ALPS] * 5
+    if Confidence_Threshold_For_ALPS == []:
+        Confidence_Threshold_For_ALPS = [quality_cutoff_ALPS] * 5
 
     for i, tool in enumerate(tools_list):
         alps_df = summary_df[["Spectrum Name", tool + " Peptide", tool + " aaScore", tool + " Score", "Area"]]
@@ -219,11 +219,11 @@ def process_ALPS(summary_df, resultdir, kmer_ALPS, contigs_ALPS, quality_cutoff_
                             resultdir + 'assembly.log'), stdout=subprocess.DEVNULL)
 
             # Quality Cut-Off for assembly at given de novo Peptide Score
-            quality_cutoff_ALPS_local = Confidence_OVER_50_AA_Prec[i]
+            quality_cutoff_ALPS_local = Confidence_Threshold_For_ALPS[i]
             alps_df = alps_df[alps_df[tool + " Score"] > quality_cutoff_ALPS_local]
-            alps_df.to_csv(resultdir + tool + f'_totalscore_cutoff_AAPrec_{str(quality_cutoff_ALPS)}_localscore_{str(quality_cutoff_ALPS_local)}.csv', index=False)
+            alps_df.to_csv(resultdir + tool + f'_confScoreThreshold_{str(quality_cutoff_ALPS)}_localScore_{str(quality_cutoff_ALPS_local)}.csv', index=False)
             subprocess.run(
-                ('java', '-jar', 'resources/ALPS.jar', resultdir + tool + f'_totalscore_cutoff_AAPrec_{str(quality_cutoff_ALPS)}_localscore_{str(quality_cutoff_ALPS_local)}.csv', str(kmer), str(contigs_ALPS), '>>',
+                ('java', '-jar', 'resources/ALPS.jar', resultdir + tool + f'_confScoreThreshold_{str(quality_cutoff_ALPS)}_localScore_{str(quality_cutoff_ALPS_local)}.csv', str(kmer), str(contigs_ALPS), '>>',
                 resultdir + 'assembly.log'), stdout=subprocess.DEVNULL)
 
 
@@ -236,7 +236,7 @@ def recall_prec_stats(summary_df, resultdir, quality_cutoff):
     AA_Recall_Values = []
     AA_Precision_Values = []
     Tool_Values = []
-    Confidence_OVER_50_AA_Prec = []
+    Confidence_Threshold_For_ALPS = []
 
     for tools in tools_list:
         logger.debug(f"Calculating precision-recall for {tools}")
@@ -269,9 +269,9 @@ def recall_prec_stats(summary_df, resultdir, quality_cutoff):
                 scorecutoff = score
                 break
         if scorecutoff == -1:
-            Confidence_OVER_50_AA_Prec.append(50)
+            Confidence_Threshold_For_ALPS.append(50)
         else:
-            Confidence_OVER_50_AA_Prec.append(scorecutoff)
+            Confidence_Threshold_For_ALPS.append(scorecutoff)
 
         total_peptide_recall.append(tool_accuracy[-1])
         total_AA_recall.append(tool_AArecall[-1])
@@ -311,13 +311,12 @@ def recall_prec_stats(summary_df, resultdir, quality_cutoff):
                columns =['Tool', 'AA Recall', 'AA Precision', 'Confidence level'])
     df_PRcurve.to_csv(resultdir+"PRcurve.csv", index=False)
 
-
     total_peptide_recall = []
     total_AA_recall = []
     total_AA_precision = []
-    return Confidence_OVER_50_AA_Prec
+    return Confidence_Threshold_For_ALPS
     
-def noise_and_cleavage_summary(summary_df):
+def print_noise_and_cleavage_summary(summary_df):
     # Number of spectra with at least one missing cleavage site
     AtLeastOneMissing = len(summary_df[summary_df['Number of missing cleavages'] > 0])
     logger.info(f"{AtLeastOneMissing*100/len(summary_df)}% of confident peptide spectrum matches are missing at least 1 fragment ions.")
@@ -342,11 +341,6 @@ def combined_tool_stats(summary_df, resultdir, quality_cutoff):
     total_peptide_recall = []
     total_AA_recall = []
     total_AA_precision = []
-    Confidence_Values = []
-    AA_Recall_Values = []
-    AA_Precision_Values = []
-    Tool_Values = []
-    Confidence_OVER_50_AA_Prec = []
     logger.debug("Calculating recall stats for pairs of tools")
     for tool_one in tools_list:
         for tool_two in tools_list:
@@ -354,7 +348,6 @@ def combined_tool_stats(summary_df, resultdir, quality_cutoff):
             tool_AArecall = []
             tool_accuracy = []
             tool_AAprecision = []
-            tool_scorecutoff = []
 
             true_list = summary_df['Modified Sequence'].tolist()
             to_test_first = summary_df[tool_one + ' Peptide'].tolist()
@@ -412,12 +405,6 @@ def combined_tool_stats(summary_df, resultdir, quality_cutoff):
     df_peptide_recall_combined.to_csv(resultdir+"CombinedPeptideRecall.csv", index=False)
 
 def recall_vs_missingcleavages(summary_df, resultdir, quality_cutoff):
-    # Get Recall vs Number of Cleavage Sites missing
-    # from 0 to 10
-    tools_stats = []
-    total_peptide_recall = []
-    total_AA_recall = []
-    total_AA_precision = []
     Confidence_Values = []
     AA_Recall_Values = []
     AA_Precision_Values = []
@@ -463,13 +450,7 @@ def recall_vs_missingcleavages(summary_df, resultdir, quality_cutoff):
     df_PRcurve.to_csv(resultdir+"MissingCleavagesVSRecall.csv", index=False)
 
 def recall_vs_missingcleavages_including_aIons(summary_df, resultdir, quality_cutoff):
-    ######################
-    # Get Recall vs Number of Cleavage Sites missing (including a-ions)
-    # from 0 to 10
     if 'Number of missing cleavages (including a-ions)' in summary_df.columns:
-        total_peptide_recall = []
-        total_AA_recall = []
-        total_AA_precision = []
         Confidence_Values = []
         AA_Recall_Values = []
         AA_Precision_Values = []
@@ -515,15 +496,6 @@ def recall_vs_missingcleavages_including_aIons(summary_df, resultdir, quality_cu
         df_PRcurve.to_csv(resultdir+"MissingCleavages_inlcudingAIons_VSRecall.csv", index=False)
 
 def recall_vs_noisefactor(summary_df, resultdir, quality_cutoff):
-    #############################################################
-    # Get Recall vs Noise Factor
-    # start at maximum of 3 
-    # or minimum of 30
-
-    tools_stats = []
-    total_peptide_recall = []
-    total_AA_recall = []
-    total_AA_precision = []
     Confidence_Values = []
     AA_Recall_Values = []
     AA_Precision_Values = []
@@ -569,13 +541,6 @@ def recall_vs_noisefactor(summary_df, resultdir, quality_cutoff):
     df_PRcurve.to_csv(resultdir+"NoiseFactorVSRecall.csv", index=False)
 
 def recall_vs_noisefactor_and_missingcleavages(summary_df, resultdir, quality_cutoff):
-    ######################################################
-    # Get Recall vs Noise Factor & Cleavage Site increasing
-    #####################################################
-    tools_stats = []
-    total_peptide_recall = []
-    total_AA_recall = []
-    total_AA_precision = []
     Confidence_Values1 = []
     Confidence_Values2 = []
     AA_Recall_Values = []
@@ -635,12 +600,6 @@ def recall_vs_noisefactor_and_missingcleavages(summary_df, resultdir, quality_cu
     df_PRcurve.to_csv(resultdir+"NoiseFactorANDMissingcleavagesVSRecall.csv", index=False)
 
 def recall_vs_missingcleavages_and_length(summary_df, resultdir, quality_cutoff):
-    ######################################################
-    # Get Recall vs Cleavage Site & Length increasing
-    #####################################################
-    total_peptide_recall = []
-    total_AA_recall = []
-    total_AA_precision = []
     Confidence_Values1 = []
     Confidence_Values2 = []
     AA_Recall_Values = []
@@ -700,13 +659,6 @@ def recall_vs_missingcleavages_and_length(summary_df, resultdir, quality_cutoff)
     df_PRcurve.to_csv(resultdir+"LengthANDMissingcleavagesVSRecall.csv", index=False)   
 
 def recall_vs_length(summary_df, resultdir, quality_cutoff):
-    ###################################
-    ## LENGTH CUTOFF
-    ###################################
-    tools_stats = []
-    total_peptide_recall = []
-    total_AA_recall = []
-    total_AA_precision = []
     Confidence_Values = []
     AA_Recall_Values = []
     AA_Precision_Values = []
@@ -781,10 +733,6 @@ def recall_vs_length(summary_df, resultdir, quality_cutoff):
 
 
 def error_stats(summary_df, resultdir, quality_cutoff):
-    #################################################################################################
-    #                                         Error stats                                           #
-    #################################################################################################
-
     logger.debug("Error Evaluation.")
     with open(resultdir + "error_eval.txt", "w+") as text_file:
         None
@@ -891,10 +839,6 @@ def error_stats(summary_df, resultdir, quality_cutoff):
 
             if total_errors == 0:
                 total_errors = 1
-            #print(tools)
-            #print(score_cutoff)
-            #print(len(tuples_SingleReplacements))
-            #print(Counter(tuples_SingleReplacements))
 
             with open(resultdir + "error_eval.txt", "a+") as text_file:
                 text_file.write("\n\nError Evaluation for " + str(tools))
@@ -953,8 +897,7 @@ def error_stats(summary_df, resultdir, quality_cutoff):
             true_list = summary_df_nomissingCleavages['Modified Sequence'].tolist()
             to_test = summary_df_nomissingCleavages[tools + ' Peptide'].tolist()
             to_test_score = summary_df_nomissingCleavages[tools + ' Score'].tolist()
-
-            longest_mismatch_sum = 0
+            
             permutations_first3 = 0
             permutations_last3 = 0
             permutations_last_and_first3 = 0
@@ -1102,10 +1045,10 @@ def generate_stats(summary_df, resultdir, quality_cutoff):
         len(summary_df.index)) + " spectras as confident (FDR < 1%).")
     
     # prints information about missing cleavages and noise
-    noise_and_cleavage_summary(summary_df)
+    print_noise_and_cleavage_summary(summary_df)
 
     # calculates and exports AA recall, AA precision, peptide recall
-    Confidence_OVER_50_AA_Prec = recall_prec_stats(summary_df, resultdir, quality_cutoff)
+    Confidence_Threshold_For_ALPS = recall_prec_stats(summary_df, resultdir, quality_cutoff)
 
     # calculates and exports AA recall, AA precision, peptide recall between pairs of tools
     combined_tool_stats(summary_df, resultdir, quality_cutoff)
@@ -1137,7 +1080,7 @@ def generate_stats(summary_df, resultdir, quality_cutoff):
     # generates error stats
     error_stats(summary_df, resultdir, quality_cutoff)
 
-    return Confidence_OVER_50_AA_Prec
+    return Confidence_Threshold_For_ALPS
 
 
 def convert_For_ALPS(summary_csv, kmer_ALPS, contigs_ALPS, quality_cutoff_ALPS, create_stats_results):
@@ -1149,11 +1092,11 @@ def convert_For_ALPS(summary_csv, kmer_ALPS, contigs_ALPS, quality_cutoff_ALPS, 
         pass
     
     summary_df = process_summaryfile(summary_csv)
-    Confidence_OVER_50_AA_Prec = []
+    Confidence_Threshold_For_ALPS = []
     if create_stats_results == True:
         logger.info("Evaluation started.")
-        Confidence_OVER_50_AA_Prec = generate_stats(summary_df, resultdir, quality_cutoff_ALPS)
+        Confidence_Threshold_For_ALPS = generate_stats(summary_df, resultdir, quality_cutoff_ALPS)
         logger.info(f"Evaluation finished. You can find the results in {resultdir}.")
     logger.info("Assembly with ALPS started.")
-    process_ALPS(summary_df, resultdir, kmer_ALPS, contigs_ALPS, quality_cutoff_ALPS, Confidence_OVER_50_AA_Prec)
+    process_ALPS(summary_df, resultdir, kmer_ALPS, contigs_ALPS, quality_cutoff_ALPS, Confidence_Threshold_For_ALPS)
     logger.info("Assembly with ALPS finished.")

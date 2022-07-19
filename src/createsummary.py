@@ -8,9 +8,8 @@ import math
 import logging
 import os
 
-from pyteomics import mgf, mass, parser
-from pyteomics import pylab_aux as pa, usi
-from config import vocab_reverse_nomods, readmgf, mass_AA, mass_tol
+from pyteomics import mgf, mass
+from config import vocab_reverse_nomods, mass_AA, mass_tol
 
 
 logger = logging.getLogger(__name__)
@@ -249,7 +248,6 @@ def process_novor(novor_path):
             novor_df.columns = ['Novor Score', 'Novor Peptide', 'Novor aaScore']
             # Replace the specific annotation of Novor for Modifications
             novor_peptide = novor_df['Novor Peptide'].tolist()
-            #TODO: Replace with dictonary
             novor_df['Novor Peptide'] = [i.replace('M(0)', 'm').replace('Q(2)', 'q').replace('N(1)', 'n').replace(' ',
                                         '').replace('C(3)', 'C').replace('Q(0)','q').replace('M(2)','m') for i in novor_peptide]
             return novor_df
@@ -536,8 +534,6 @@ def process_peptideshaker(dbreport_path):
             dbreport_df = dbreport_df[validated_list]
             spectrum_title = dbreport_df['Spectrum Title']
             dbreport_df['Index'] = [int(i.split("Index: ")[1].split(",")[0]) for i in spectrum_title]
-            #dbreport_df['Index'] = [int(i.split("index=")[1].split(",")[0]) for i in spectrum_title]
-            # Replace Isoleucin with Leucin in Database Search
             db_peptide = dbreport_df['Modified Sequence']
             dbreport_df['Modified Sequence'] = [(i.replace("I", "L").replace("NH2-", "").replace("-COOH", "").replace(
                 "C<cmm>", "C").replace("M<ox>", "m").replace("pyro-", "")).replace("N<deam>", "n").replace("Q<deam>",
@@ -571,9 +567,6 @@ def denovo_summary(mgf_in, resultdir, dbreport):
         # Novor
         novor_path = resultdir + 'DeNovoCLI/' + mgf_in + '.novor.csv'
         novor_df = process_novor(novor_path)
-        # PepNovo
-        #pepnovo_path = resultdir + 'DeNovoCLI/' + mgf_in + '.mgf.out'
-        #pepnovo_df = process_pepnovo(pepnovo_path)
         # SMSNet
         smsnet_path = resultdir + "SMSNet/" + mgf_in
         smsnet_df = process_smsnet(smsnet_path)
