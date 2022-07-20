@@ -10,20 +10,17 @@ import matplotlib
 matplotlib.use('pdf')
 from matplotlib import pyplot as plt
 from sklearn import metrics
-#import tikzplotlib
 from fast_diff_match_patch import diff
 import logging
 from collections import Counter
 
-from config import vocab, _match_AA_novor, arePermutation, tools_list, _match_AA_novor_errorstats
-from createsummary import lcs
+from config import vocab, _match_AA_novor, arePermutation, tools_list
 
 pd.options.mode.chained_assignment = None
 logger = logging.getLogger(__name__)
 logging.getLogger('matplotlib').setLevel(logging.ERROR)
 
 
-# TODO: Add threshold mode: Are we looking at the confidence score, peptide length, noise factor, or missing cleavages?
 def precision_recall_with_threshold(peptides_truth, peptides_predicted, peptides_predicted_confidence, threshold):
     """
     Calculate precision and recall for the given confidence score threshold
@@ -743,7 +740,6 @@ def error_stats(summary_df, resultdir, quality_cutoff):
             to_test = summary_df[tools + ' Peptide'].tolist()
             to_test_score = summary_df[tools + ' Score'].tolist()
 
-            longest_mismatch_sum = 0
             permutations_first3 = 0
             permutations_last3 = 0
             permutations_last_and_first3 = 0
@@ -761,11 +757,7 @@ def error_stats(summary_df, resultdir, quality_cutoff):
             total_errors = 0
             number_of_predictions = 0
 
-            Which_2AA_list = []
-
             tuples_SingleReplacements = []
-            
-            # TODO: use difflib differ?
 
             for i, (pred_peptide, true_peptide) in enumerate(zip(to_test, true_list)):
                 if type(pred_peptide) is str and type(true_peptide) is str and to_test_score[i] >= score_cutoff:
@@ -781,9 +773,6 @@ def error_stats(summary_df, resultdir, quality_cutoff):
                     pos_insertion = 0
                     for z, (op, length) in enumerate(changes):
                         length_seq += length
-                        # if op == "-": print("next", length, "characters are deleted")
-                        # if op == "=": print("next", length, "characters are in common")
-                        # if op == "+": print("next", length, "characters are inserted")
                         if op == "=":
                             lengthseq2 += length
                         if op == "+" and length > longest_mismatch_pos:
@@ -926,9 +915,6 @@ def error_stats(summary_df, resultdir, quality_cutoff):
                     length_seq = 0
                     for z, (op, length) in enumerate(changes):
                         length_seq += length
-                        # if op == "-": print("next", length, "characters are deleted")
-                        # if op == "=": print("next", length, "characters are in common")
-                        # if op == "+": print("next", length, "characters are inserted")
                         if op == "+" and length > longest_mismatch_pos:
                             longest_mismatch_pos = length
                         if op == "-" and length > longest_mismatch_neg:

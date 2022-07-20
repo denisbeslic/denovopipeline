@@ -1,8 +1,9 @@
 import numpy as np
-from pyteomics import mgf, mass
+from pyteomics import mgf
 from collections import OrderedDict
 
-mass_tol = 0.5 # in Da
+match_mass_tol = 0.1 # in Da
+prefix_mass_tol = 0.5 # in Da
 
 tools_list = [
     "Novor",
@@ -111,21 +112,16 @@ mass_AA_min = mass_AA["G"]  # 57.02146
 
 
 def arePermutation(str1, str2):
-    # Get lenghts of both strings
     n1 = len(str1)
     n2 = len(str2)
-    # If length of both strings is not same,
-    # then they cannot be Permutation
     if (str1 == str2):
         return False
     if (n1 != n2):
         return False
-    # Sort both strings
     a = sorted(str1)
     str1 = " ".join(a)
     b = sorted(str2)
     str2 = " ".join(b)
-    # Compare sorted strings
     for i in range(0, n1, 1):
         if (str1[i] != str2[i]):
             return False
@@ -134,7 +130,6 @@ def arePermutation(str1, str2):
 
 # Function from DeepNovo to calculate correct match between two sequences
 def _match_AA_novor(target, predicted):
-    """TODO(nh2tran): docstring."""
     num_match = 0
     target_len = len(target)
     predicted_len = len(predicted)
@@ -148,7 +143,6 @@ def _match_AA_novor(target, predicted):
     while i < target_len and j < predicted_len:
         if abs(target_mass_cum[i] - predicted_mass_cum[j]) < 0.5:
             if abs(target_mass[i] - predicted_mass[j]) < 0.1:
-                # ~ if  decoder_input[index_aa] == output[index_aa]:
                 num_match += 1
             i += 1
             j += 1
@@ -158,35 +152,6 @@ def _match_AA_novor(target, predicted):
             j += 1
 
     return num_match
-
-
-def _match_AA_novor_errorstats(target, predicted):
-    """TODO(nh2tran): docstring."""
-    num_match = 0
-    target_len = len(target)
-    predicted_len = len(predicted)
-    target_mass = [mass_ID[x] for x in target]
-    target_mass_cum = np.cumsum(target_mass)
-    predicted_mass = [mass_ID[x] for x in predicted]
-    predicted_mass_cum = np.cumsum(predicted_mass)
-    i = 0
-    j = 0
-    ins_prediction = 0
-    del_prediction = 0
-    while i < target_len and j < predicted_len:
-        if abs(target_mass_cum[i] - predicted_mass_cum[j]) < 0.5:
-            if abs(target_mass[i] - predicted_mass[j]) < 0.1:
-                # ~ if  decoder_input[index_aa] == output[index_aa]:
-                num_match += 1
-            i += 1
-            j += 1
-        elif target_mass_cum[i] < predicted_mass_cum[j]:
-            i += 1
-            ins_prediction+=1
-        else:
-            j += 1
-            del_prediction+=1
-    return num_match, ins_prediction, del_prediction
 
 DIMENSION = 90000
 BIN_SIZE = 0.1
