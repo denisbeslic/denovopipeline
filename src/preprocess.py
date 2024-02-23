@@ -30,6 +30,7 @@ def reformat_MGF(mgf_in):
         mgf_out.replace(".mgf", "_deepnovo.mgf"), "w"
     ) as out_f2:
         for line in in_f:
+            charge_line = None
             if line == "BEGIN IONS\n":
                 ms2_peak_lines = []
             elif "TITLE=" == line[:6]:
@@ -64,6 +65,7 @@ def reformat_MGF(mgf_in):
                         + old_scan
                         + "\n"
                     )
+                    if charge_line==None: charge_line="CHARGE=2+\n"
                     out_f.write(pepmass_line)
                     out_f.write(charge_line)
                     out_f.write("SCANS=" + str(new_scan) + "\n")
@@ -149,3 +151,4 @@ def transfer_mgf(old_mgf_file_name, output_feature_file_name, spectrum_fw):
                     spectrum_fw.write(line)
                 else:
                     spectrum_fw.write(line)
+

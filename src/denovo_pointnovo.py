@@ -42,14 +42,17 @@ def transfer_mgf(old_mgf_file_name, output_feature_file_name, spectrum_fw):
             writer.writerow(header)
             flag = False
             for line in fr:
-                if "BEGIN ION" in line:
+                
+                if "BEGIN ION" in line or "BEGIN IONS" in line:
                     flag = True
                     spectrum_fw.write(line)
                 elif not flag:
                     spectrum_fw.write(line)
                 elif line.startswith("TITLE="):
+                    #scan = re.split("=|\r|\n", line)[1]
                     spectrum_fw.write(line)
                 elif line.startswith("PEPMASS="):
+                    line = line.replace("\t", "")
                     mz = re.split("=|\r|\n", line)[1]
                     spectrum_fw.write(line)
                 elif line.startswith("CHARGE="):
@@ -64,6 +67,7 @@ def transfer_mgf(old_mgf_file_name, output_feature_file_name, spectrum_fw):
                 elif line.startswith("SEQ="):
                     seq = re.split("=|\r|\n", line)[1]
                 elif line.startswith("END IONS"):
+                    #seq=""
                     feature = Feature(
                         spec_id=scan, mz=mz, z=z, rt_mean=rt_mean, seq=seq, scan=scan
                     )

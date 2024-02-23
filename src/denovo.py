@@ -7,6 +7,7 @@ import platform
 import logging
 import subprocess
 import shlex
+from pathlib import Path
 
 logger = logging.getLogger(__name__) 
 
@@ -88,16 +89,16 @@ def run_pointnovo(mgf_in, dir_out, pointnovo_model):
     mgf_in = os.path.abspath(mgf_in)
     dir_in = mgf_in.rpartition("/")[0] + "/"
     # creates feature file for pointnovo
-    denovo_output_feature_file = f"{dir_in}features.csv"
-    denovo_spectrum_fw = open(f"{dir_in}spectrum.mgf", 'w')
-    spectrum_fw = open(f"{dir_in}spectrum.mgf", 'w')
+    file_name = Path(mgf_in).stem
+
+    denovo_output_feature_file = os.path.join(dir_in, f"{file_name}_features.csv")
+    denovo_spectrum_fw = open(os.path.join(dir_in, f"{file_name}_spectrum.mgf"), "w")
     denovo_pointnovo.transfer_mgf(mgf_in, denovo_output_feature_file, denovo_spectrum_fw)
     denovo_spectrum_fw.close()
-    spectrum_fw.close()
 
     if not os.path.exists(f"{dir_out}/PointNovo/"):
         os.makedirs(f"{dir_out}/PointNovo/")
-    predict_out = os.path.abspath(f"{dir_out}/PointNovo/features.csv.deepnovo_denovo")
+    predict_out = os.path.abspath(f"{dir_out}/PointNovo/{file_name}_features.csv.deepnovo_denovo")
     configfile = "resources/PointNovo/config.py"
     with open(configfile, 'r') as file:
         data = file.readlines()
